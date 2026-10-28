@@ -5,6 +5,8 @@
 const fs = require('fs');
 const path = require('path');
 const lib = require('./_lib.js');
+// 必须在加载任何业务模块前安装：把 require('wx-server-sdk') 指向内存 mock
+require('./_mock_cloud.js').install();
 
 (async function main() {
   const dir = __dirname;

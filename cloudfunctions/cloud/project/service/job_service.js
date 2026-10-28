@@ -45,9 +45,9 @@ class JobService extends BaseService {
         processed++;
         // 同步释放实时占用表 reservations（避免该场地长期处于「已约」状态）
         try {
-          await ReservationModel.del(r._id);
+          await ReservationModel.del(r.res_id);
         } catch (e) {
-          console.error('[expire] 释放占用失败 res_id=' + r._id, e);
+          console.error('[expire] 释放占用失败 res_id=' + r.res_id, e);
         }
       }
     }

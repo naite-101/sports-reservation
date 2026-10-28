@@ -149,9 +149,10 @@ async function createIndexes() {
     },
   ];
   const coll = dbUtil.getDb().collection(collName);
-  // 部分 wx-server-sdk 版本未暴露 createIndex，降级为告警（README 第 5 步手动建）
+  // wx-server-sdk 及其依赖（@cloudbase/node-sdk、@cloudbase/database）都不提供 createIndex，
+  // 实际必然走下面的降级分支，索引需在控制台手动创建。
   if (typeof coll.createIndex !== 'function') {
-    console.warn('[init] 当前 wx-server-sdk 不支持 createIndex，请按 README 第 5 步在控制台手动创建索引 uniq_student_slot');
+    console.warn('[init] 当前 wx-server-sdk 不支持 createIndex，请按 README 第 5 步在控制台手动创建唯一索引 uniq_student_slot（否则防重复仅依赖应用层校验，存在并发竞态）');
     return ['uniq_student_slot(manual-required)'];
   }
   const created = [];
@@ -188,7 +189,7 @@ async function initAll() {
     time_slots: slots,
     configs: configs,
     admin: admin,
-    note: 'uniq_student_slot 组合唯一索引已由本脚本自动创建，无需在控制台手动建',
+    note: 'uniq_student_slot 需在云开发控制台手动创建（当前 wx-server-sdk 不提供 createIndex），见 README 第 5 步',
   };
 }
 

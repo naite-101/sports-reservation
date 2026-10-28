@@ -48,6 +48,10 @@ class HrService extends BaseService {
   async adminRemove(operator, { openid }) {
     const user = await UserModel.getOne(openid);
     if (!user) this.AppError('用户不存在', appCode.LOGIC);
+    // 只能操作权限低于自己的成员，否则老师可直接把主席降为学生
+    if (Number(user.role) >= Number(operator.role)) {
+      this.AppError('不能移除同级或更高权限的成员', appCode.NO_RIGHT);
+    }
     await UserModel.edit(openid, { role: config.ROLE.STUDENT, status: 1, update_time: timeUtil.now() });
     await this._log(operator, 'remove_admin', openid, user.name || openid, { from_role: user.role });
     return { removed: true };

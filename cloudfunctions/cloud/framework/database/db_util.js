@@ -244,7 +244,7 @@ function fmtOp(arr) {
     case 'in':
       return cmd.in(Array.isArray(val) ? val : String(val).split(','));
     case 'like':
-      return getDb().RegExp({ regexp: String(val), options: 'i' });
+      return getDb().RegExp({ regexp: String(val).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), options: 'i' });
     case 'between':
       return cmd.and(cmd.gte(arr[1]), cmd.lte(arr[2]));
     default:

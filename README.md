@@ -45,7 +45,7 @@ gymreserve/
 
 ### 3. 在微信开发者工具中打开项目
 
-- 导入项目根目录 `gymreserve/`，AppID 用你自己的小程序 AppID（`project.config.json` 中当前为 `touristappid` 测试号，请替换）。
+- 导入项目根目录 `gymreserve/`，AppID 用你自己的小程序 AppID（`project.config.json` 中当前为 `wx18ef612302a31119`，请替换成你自己的）。
 
 ### 4. 开通云开发并部署云函数
 
@@ -57,13 +57,13 @@ gymreserve/
 { "route": "init/run", "job_secret": "gymreserve-job-secret-2026" }
 ```
 
-> 该脚本会自动创建 11 个集合、写入 32 个场馆、6 个场次模板、默认配置，并按 `INIT_ADMIN_OPENID` 创建/提升超级管理员。可重复执行（幂等）。
+> 该脚本会自动创建 11 个集合、写入 32 个场馆、6 个场次模板、默认配置，并按 `INIT_ADMIN_OPENID` 创建/提升超级管理员。可重复执行（幂等）。**唯一索引例外，需手动创建，见第 5 步。**
 
-### 5. 预约防重复的组合唯一索引（★已自动化）
+### 5. 预约防重复的组合唯一索引（⚠️ 需手动创建一次）
 
-`reservations` 集合的 `_id` 已由 `日期_场次_场地` 组合主键保证「场地不超约」；「同一学生同一时间窗跨场馆只约 1 个」由组合唯一索引 `uniq_student_slot`（`student_openid + date + slot_key`，唯一）保证。
+`reservations` 集合的 `_id` 已由 `日期_场次_场地` 组合主键保证「场地不超约」（天然唯一，无需额外建索引）；「同一学生同一时间窗跨场馆只约 1 个」由组合唯一索引 `uniq_student_slot`（`student_openid + date + slot_key`，唯一）保证。
 
-该索引**已由初始化脚本 `init/run` 自动创建**（见 `project/init/init_data.js` 的 `createIndexes`），重跑幂等（索引已存在视为成功）。如需手动核对/补建：
+> **该索引无法由 `init/run` 自动创建。** `wx-server-sdk` 的 `Collection` 实例并未提供 `createIndex` 方法（依赖链 `wx-server-sdk` → `@cloudbase/node-sdk` → `@cloudbase/database` 三层均未暴露该 API），初始化脚本检测不到该方法时会打印告警并跳过，因此**必须按下表在控制台手动建一次**。
 
 在云开发控制台 → 数据库 → `reservations` 集合 → 索引管理 → 新建索引：
 
@@ -76,7 +76,7 @@ gymreserve/
 - **索引名称**：`uniq_student_slot`
 - **唯一**：是
 
-> 若索引缺失，系统仍能保证「场地不超约」，但无法拦截同一学生跨场馆同时间窗的重复预约（对应错误码 4101 不会触发）。请确认 `init/run` 已成功执行且返回 `indexes` 含 `uniq_student_slot`。
+> 若索引缺失，系统仍能保证「场地不超约」；`reservation_service.create` 内也做了一次「同一学生同时间窗是否已约其他场地」的查询兜底，所以 4101 依然会触发。但应用层「先查后插」存在并发竞态窗口，高并发下不如数据库唯一索引可靠。请在首次部署后到控制台确认索引列表中存在 `uniq_student_slot`。
 
 ### 6. 定时触发器
 

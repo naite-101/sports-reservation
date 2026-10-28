@@ -46,6 +46,7 @@ class VenueService extends BaseService {
     const slots = await TimeSlotModel.getAll({}, '*', { sort: 'asc' });
     const daySlots = slots
       .filter((s) => s.day_type === 'all' || s.day_type === (weekend ? 'weekend' : 'weekday'))
+      .filter((s) => !is_today || s.start_min > nowMin)
       .map((s) => ({
         slot_key: s.slot_key,
         start_time: s.start_time,
@@ -115,7 +116,7 @@ class VenueService extends BaseService {
         console.error('[venue_close] 释放占用失败 res_id=' + b._id, e);
       }
       const upd = await ReservationRecordModel.edit(
-        { _id: b._id, status: 'pending' },
+        { res_id: b._id, status: 'pending' },
         { status: 'cancelled', cancel_time: now, cancel_reason: 'venue_closed', update_time: now }
       );
       if (upd === 1) cancelled++;

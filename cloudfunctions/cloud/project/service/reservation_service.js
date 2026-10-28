@@ -73,12 +73,25 @@ class ReservationService extends BaseService {
     if (slot.day_type !== 'all' && slot.day_type !== (weekend ? 'weekend' : 'weekday')) {
       this.AppError('该场次当日不开放', appCode.LOGIC);
     }
+    // 场次已开始/已结束不可约：前端的时间判断不可信，以服务端时间兜底
+    if (timeUtil.dateMinuteToTimestamp(date, slot.start_min) <= now) {
+      this.AppError('该场次已开始或已结束，不可预约', appCode.NOT_OPEN_TIME);
+    }
 
     // 场地校验（闭馆不可约）
     const venue = await VenueModel.getOne(venue_key);
     if (!venue) this.AppError('场地不存在', appCode.LOGIC);
     if (venue.closed && (!venue.closed_until || venue.closed_until > now)) {
       this.AppError('该场地临时闭馆，不可预约', appCode.VENUE_CLOSED);
+    }
+
+    // 唯一索引无法由 SDK 自动创建（见 README 第 5 步），缺索引时这里补一次跨场地查重
+    const dupCntPre = await ReservationModel.count({
+      student_openid: openId, date: date, slot_key: slot_key,
+      venue_key: ['!=', venue_key],
+    });
+    if (dupCntPre > 0) {
+      this.AppError('您在该时段已预约其他场地', appCode.DUPLICATE_SLOT);
     }
 
     const resId = date + '_' + slot_key + '_' + venue_key;
