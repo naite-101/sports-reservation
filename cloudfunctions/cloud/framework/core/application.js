@@ -40,6 +40,16 @@ async function app(event, context) {
       return appUtil.handlerData(result);
     }
 
+    // 云端冒烟测试（密钥保护，仅部署/排查时手动调用）
+    if (route === 'smoke/run') {
+      if (event.job_secret !== config.JOB_SECRET) {
+        throw new AppError('无权限', appCode.NO_RIGHT);
+      }
+      const SmokeService = require('../../project/service/smoke_service.js');
+      const result = await new SmokeService().run();
+      return appUtil.handlerData(result);
+    }
+
     const routeDef = routes[route];
     if (!routeDef) {
       return appUtil.handlerAppErr('路由不存在：' + route, appCode.DATA);

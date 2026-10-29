@@ -1,0 +1,54 @@
+<view class="container">
+  <view class="banner">压测模式：多个真人同时点「抢」，抢同一场地，只有 1 人成功</view>
+
+  <view class="card" wx:if="{{user}}">
+    <view class="card-title">当前身份</view>
+    <view class="text">姓名：{{user.name || '未填写'}}</view>
+    <view class="text-muted" wx:if="{{!user.info_completed}}">⚠ 未完善个人信息，预约会被拒（4010）</view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">目标日期：{{date}}</view>
+    <view class="text-muted" wx:if="{{!openReached}}">未到开放时间（每天 {{openTime.hour}}:{{openTime.minute}} 开放）</view>
+    <view class="text-muted" wx:else>可以抢</view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">场次</view>
+    <view class="slot-tabs">
+      <view
+        class="slot-tab {{activeSlotKey === item.slot_key ? 'active' : ''}}"
+        wx:for="{{slots}}"
+        wx:key="slot_key"
+        data-key="{{item.slot_key}}"
+        bindtap="onTapSlot"
+      >{{item.start_time}}~{{item.end_time}}</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">目标场地（所有人抢这个）</view>
+    <view class="target" wx:if="{{targetCourt}}">{{targetCourt}}</view>
+    <view class="empty" wx:else>暂无可抢场地（可能已被抢或未开放）</view>
+  </view>
+
+  <view class="btn {{(!openReached || !targetCourt) ? 'disabled' : ''}}" bindtap="grab">抢！</view>
+  <view class="btn secondary" bindtap="release">释放我抢到的场地</view>
+
+  <view class="card" wx:if="{{lastResult}}">
+    <view class="card-title">最近一次结果</view>
+    <view class="result {{lastResult.ok ? 'ok' : 'fail'}}">
+      {{lastResult.ok ? '成功' : '失败'}} · {{lastResult.msg}}
+    </view>
+    <view class="text-muted">耗时 {{lastResult.cost}} ms · code={{lastResult.code}}</view>
+  </view>
+
+  <view class="card" wx:if="{{logs.length}}">
+    <view class="card-title">本机点击记录</view>
+    <view class="log-item" wx:for="{{logs}}" wx:key="at">
+      <text class="{{item.ok ? 'log-ok' : 'log-fail'}}">{{item.ok ? '成功' : '失败'}}</text>
+      <text class="log-msg">{{item.msg}}</text>
+      <text class="log-cost">{{item.cost}}ms</text>
+    </view>
+  </view>
+</view>

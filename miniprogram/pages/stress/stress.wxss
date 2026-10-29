@@ -1,0 +1,129 @@
+.container {
+  padding: 24rpx;
+}
+
+.banner {
+  background: #fff3cd;
+  color: #856404;
+  padding: 20rpx 24rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  margin-bottom: 20rpx;
+  line-height: 1.5;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.text {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.text-muted {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+.slot-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.slot-tab {
+  padding: 14rpx 24rpx;
+  background: #f0f0f0;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+}
+
+.slot-tab.active {
+  background: #1f7a4d;
+  color: #fff;
+}
+
+.target {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #1f7a4d;
+}
+
+.empty {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.btn {
+  background: #1f7a4d;
+  color: #fff;
+  text-align: center;
+  padding: 28rpx 0;
+  border-radius: 16rpx;
+  font-size: 34rpx;
+  font-weight: 600;
+  margin-bottom: 20rpx;
+}
+
+.btn.disabled {
+  background: #cccccc;
+}
+
+.btn.secondary {
+  background: #fff;
+  color: #1f7a4d;
+  border: 2rpx solid #1f7a4d;
+}
+
+.result {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.result.ok {
+  color: #1f7a4d;
+}
+
+.result.fail {
+  color: #d9534f;
+}
+
+.log-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  font-size: 24rpx;
+}
+
+.log-ok {
+  color: #1f7a4d;
+  font-weight: 600;
+}
+
+.log-fail {
+  color: #d9534f;
+  font-weight: 600;
+}
+
+.log-msg {
+  flex: 1;
+  color: #666;
+}
+
+.log-cost {
+  color: #999;
+}

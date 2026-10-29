@@ -1,21 +1,36 @@
 const request = require('../../../utils/request.js');
 
 const ROLE_TEXT = { 2: '普通管理员', 3: '超级管理员', 4: '老师', 5: '现任主席' };
+// 每个角色「提升」按钮的文案（升到更高一级）；主席(5) 已最高，不再显示提升
+const ROLE_UP_LABEL = { 2: '升为超管', 3: '升为老师', 4: '升为主席', 5: '' };
 
 Page({
   data: {
     tab: 'admin',
+    myRole: 0,
     admins: [],
     students: [],
     keyword: '',
     showAdd: false,
     adminForm: { openid: '', role: 2, name: '' },
+    roleUpLabel: ROLE_UP_LABEL,
     editStudent: null,
     studentForm: { openid: '', name: '', student_no: '', phone: '', college: '' },
   },
 
-  onShow() {
+  async onShow() {
+    await this.initRole();
     this.load();
+  },
+
+  // 获取当前登录者角色，用于控制「学生管理」「移除」等仅人事管理员可见的入口
+  async initRole() {
+    try {
+      const login = await request.call('passport/login', {}, { silent: true });
+      this.setData({ myRole: login.role || 0 });
+    } catch (e) {
+      this.setData({ myRole: 0 });
+    }
   },
 
   switchTab(e) {
@@ -108,16 +123,18 @@ Page({
     } catch (err) {}
   },
 
-  // 调整权限：普通管理员 <-> 超级管理员
+  // 调整权限：逐级提升（普通管理员2 → 超管3 → 老师4 → 主席5）
+  // 降级需求较小，前端仅提供「提升」；后端 hr/admin_assign 按操作者权限兜底校验
   async assignRole(e) {
     const openid = e.currentTarget.dataset.openid;
     const status = Number(e.currentTarget.dataset.status);
     const role = Number(e.currentTarget.dataset.role);
-    const next = role === 2 ? 3 : 2;
+    if (role >= 5) return; // 主席已是最高权限，无可提升
+    const next = role + 1;
     const res = await new Promise((resolve) => {
       wx.showModal({
         title: '调整权限',
-        content: next === 3 ? '确定提升为超级管理员吗？' : '确定调整为普通管理员吗？',
+        content: '确定将 ' + (ROLE_TEXT[role] || role) + ' 提升为 ' + (ROLE_TEXT[next] || next) + ' 吗？',
         success: (r) => resolve(r.confirm),
       });
     });

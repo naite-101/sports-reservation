@@ -14,12 +14,41 @@ class HrService extends BaseService {
     return await UserModel.getAll({ role: ['>=', config.ROLE.ADMIN] }, '*', { role: 'desc', create_time: 'asc' });
   }
 
-  /** 任免/新增管理员（仅 2=普通管理员 / 3=超级管理员） */
+  /**
+   * 任命权限规则（bug 修复）：
+   * - 超级管理员(3)：只能任命普通管理员(2)
+   * - 人事管理员（老师4 / 主席5）：可任命普通管理员(2)、超级管理员(3)、人事管理员(4/5)
+   * - 其他角色：无任命权
+   * @returns 可任命的目标角色数组；空数组表示无权任命
+   */
+  assignableRoles(operatorRole) {
+    operatorRole = Number(operatorRole);
+    if (operatorRole === config.ROLE.SUPER_ADMIN) {
+      return [config.ROLE.ADMIN];
+    }
+    if (operatorRole === config.ROLE.TEACHER || operatorRole === config.ROLE.CHAIRMAN) {
+      return [config.ROLE.ADMIN, config.ROLE.SUPER_ADMIN, config.ROLE.TEACHER, config.ROLE.CHAIRMAN];
+    }
+    return [];
+  }
+
+  /** 校验操作者是否有权任命目标角色，无权则抛 NO_RIGHT */
+  assertCanAssign(operator, targetRole) {
+    const allowed = this.assignableRoles(operator.role);
+    if (allowed.indexOf(Number(targetRole)) < 0) {
+      this.AppError('您无权任命该角色', appCode.NO_RIGHT);
+    }
+  }
+
+  /** 任免/新增管理员 */
   async adminAdd(operator, { openid, role, name }) {
     role = Number(role);
-    if (role !== config.ROLE.ADMIN && role !== config.ROLE.SUPER_ADMIN) {
-      this.AppError('仅可任免普通管理员或超级管理员', appCode.DATA);
+    // 目标角色必须是合法管理员角色（2/3/4/5）
+    if ([config.ROLE.ADMIN, config.ROLE.SUPER_ADMIN, config.ROLE.TEACHER, config.ROLE.CHAIRMAN].indexOf(role) < 0) {
+      this.AppError('仅可任命普通管理员、超级管理员或人事管理员', appCode.DATA);
     }
+    // 按操作者权限校验（bug 修复：超管仅能任命普通管理员；人事管理员可任命到人事管理员）
+    this.assertCanAssign(operator, role);
     const now = timeUtil.now();
     const user = await UserModel.getOne(openid);
     if (!user) {
@@ -60,9 +89,11 @@ class HrService extends BaseService {
   /** 分配/调整/禁用权限 */
   async adminAssign(operator, { openid, role, status }) {
     role = Number(role);
-    if (role !== config.ROLE.ADMIN && role !== config.ROLE.SUPER_ADMIN) {
+    if ([config.ROLE.ADMIN, config.ROLE.SUPER_ADMIN, config.ROLE.TEACHER, config.ROLE.CHAIRMAN].indexOf(role) < 0) {
       this.AppError('权限等级不合法', appCode.DATA);
     }
+    // 按操作者权限校验（bug 修复：与 adminAdd 一致）
+    this.assertCanAssign(operator, role);
     const user = await UserModel.getOne(openid);
     if (!user) this.AppError('用户不存在', appCode.LOGIC);
 

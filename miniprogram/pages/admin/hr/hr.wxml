@@ -1,7 +1,7 @@
 <view class="container">
   <view class="type-tabs" style="margin-bottom: 24rpx;">
     <view class="type-tab {{tab === 'admin' ? 'active' : ''}}" data-tab="admin" bindtap="switchTab">管理员管理</view>
-    <view class="type-tab {{tab === 'student' ? 'active' : ''}}" data-tab="student" bindtap="switchTab">学生管理</view>
+    <view class="type-tab {{tab === 'student' ? 'active' : ''}}" data-tab="student" bindtap="switchTab" wx:if="{{myRole >= 4}}">学生管理</view>
   </view>
 
   <!-- 管理员管理 -->
@@ -17,7 +17,9 @@
         <view class="form-label">角色</view>
         <radio-group bindchange="onAdminInput" data-field="role">
           <label style="margin-right: 24rpx;"><radio value="2" checked="{{adminForm.role == 2}}" />普通管理员</label>
-          <label><radio value="3" checked="{{adminForm.role == 3}}" />超级管理员</label>
+          <label style="margin-right: 24rpx;"><radio value="3" checked="{{adminForm.role == 3}}" />超级管理员</label>
+          <label style="margin-right: 24rpx;"><radio value="4" checked="{{adminForm.role == 4}}" />老师</label>
+          <label><radio value="5" checked="{{adminForm.role == 5}}" />主席</label>
         </radio-group>
       </view>
       <view class="form-item">
@@ -36,10 +38,10 @@
         </view>
       </view>
       <view class="text-muted" style="margin-top: 8rpx;">{{item._id}}</view>
-      <view class="row" style="justify-content: flex-end; gap: 12rpx; margin-top: 12rpx;" wx:if="{{item.role <= 3}}">
+      <view class="row" style="justify-content: flex-end; gap: 12rpx; margin-top: 12rpx;" wx:if="{{item.role >= 2}}">
         <view class="btn plain" style="padding: 8rpx 20rpx;" data-openid="{{item._id}}" data-status="{{item.status}}" data-role="{{item.role}}" bindtap="toggleStatus">{{item.status === 1 ? '禁用' : '启用'}}</view>
-        <view class="btn plain" style="padding: 8rpx 20rpx;" data-openid="{{item._id}}" data-status="{{item.status}}" data-role="{{item.role}}" bindtap="assignRole">{{item.role === 2 ? '升为超管' : '降为普管'}}</view>
-        <view class="btn danger" style="padding: 8rpx 20rpx;" data-openid="{{item._id}}" bindtap="removeAdmin">移除</view>
+        <view class="btn plain" style="padding: 8rpx 20rpx;" data-openid="{{item._id}}" data-status="{{item.status}}" data-role="{{item.role}}" bindtap="assignRole" wx:if="{{item.role < 5}}">{{roleUpLabel[item.role]}}</view>
+        <view class="btn danger" style="padding: 8rpx 20rpx;" data-openid="{{item._id}}" bindtap="removeAdmin" wx:if="{{myRole >= 4}}">移除</view>
       </view>
     </view>
   </block>

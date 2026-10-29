@@ -16,7 +16,8 @@
     "pages/admin/checkin-records/checkin-records",
     "pages/admin/venue-close/venue-close",
     "pages/admin/logs/logs",
-    "pages/admin/hr/hr"
+    "pages/admin/hr/hr",
+    "pages/stress/stress"
   ],
   "window": {
     "backgroundTextStyle": "light",

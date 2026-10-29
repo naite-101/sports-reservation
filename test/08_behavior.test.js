@@ -316,6 +316,92 @@ t('人事撤销管理员：不能操作同级或更高权限的成员', async ()
   await expectOk(() => svc.adminRemove(userOf('tch_2'), { openid: 'adm_2' }), '老师移除普通管理员');
 });
 
+t('任命权限：超管只能任命普通管理员', async () => {
+  seedBase();
+  const mk = (id, role, name) => mock.seed(config.COLLECTION.users, {
+    _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
+  });
+  mk('sa_1', config.ROLE.SUPER_ADMIN, '赵超管');
+  const svc = new HrService();
+  const op = () => userOf('sa_1');
+
+  // 超管(3) 能任命普通管理员(2)
+  await expectOk(() => svc.adminAdd(op(), { openid: 'new_adm', role: config.ROLE.ADMIN, name: '新管理员' }),
+    '超管任命普通管理员');
+  assertEqual(userOf('new_adm').role, config.ROLE.ADMIN, '任命后角色应为普通管理员');
+
+  // 超管(3) 不能任命超管(3)
+  await expectErr(() => svc.adminAdd(op(), { openid: 'new_sa', role: config.ROLE.SUPER_ADMIN, name: '新超管' }),
+    appCode.NO_RIGHT, '超管任命超管');
+
+  // 超管(3) 不能任命老师(4) / 主席(5)
+  await expectErr(() => svc.adminAdd(op(), { openid: 'new_tch', role: config.ROLE.TEACHER, name: '新老师' }),
+    appCode.NO_RIGHT, '超管任命老师');
+  await expectErr(() => svc.adminAdd(op(), { openid: 'new_chair', role: config.ROLE.CHAIRMAN, name: '新主席' }),
+    appCode.NO_RIGHT, '超管任命主席');
+});
+
+t('任命权限：人事管理员(老师/主席)可任命到人事管理员和超管', async () => {
+  seedBase();
+  const mk = (id, role, name) => mock.seed(config.COLLECTION.users, {
+    _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
+  });
+  mk('tch_1', config.ROLE.TEACHER, '王老师');
+  mk('chair_1', config.ROLE.CHAIRMAN, '李主席');
+  const svc = new HrService();
+
+  // 老师(4) 能任命：普通管理员、超管、老师、主席
+  await expectOk(() => svc.adminAdd(userOf('tch_1'), { openid: 'a1', role: config.ROLE.ADMIN, name: 'a1' }),
+    '老师任命普通管理员');
+  await expectOk(() => svc.adminAdd(userOf('tch_1'), { openid: 'a2', role: config.ROLE.SUPER_ADMIN, name: 'a2' }),
+    '老师任命超管');
+  await expectOk(() => svc.adminAdd(userOf('tch_1'), { openid: 'a3', role: config.ROLE.TEACHER, name: 'a3' }),
+    '老师任命老师');
+  await expectOk(() => svc.adminAdd(userOf('tch_1'), { openid: 'a4', role: config.ROLE.CHAIRMAN, name: 'a4' }),
+    '老师任命主席');
+
+  // 主席(5) 同样能任命人事管理员
+  await expectOk(() => svc.adminAdd(userOf('chair_1'), { openid: 'a5', role: config.ROLE.TEACHER, name: 'a5' }),
+    '主席任命老师');
+  await expectOk(() => svc.adminAdd(userOf('chair_1'), { openid: 'a6', role: config.ROLE.CHAIRMAN, name: 'a6' }),
+    '主席任命主席');
+});
+
+t('任命权限：学生/普通管理员无权任命', async () => {
+  seedBase();
+  const mk = (id, role, name) => mock.seed(config.COLLECTION.users, {
+    _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
+  });
+  mk('stu_x', config.ROLE.STUDENT, '学生');
+  mk('adm_x', config.ROLE.ADMIN, '普通管理员');
+  const svc = new HrService();
+
+  // 学生(1)、普通管理员(2) 都无权任命（assignableRoles 返回空数组 → NO_RIGHT）
+  await expectErr(() => svc.adminAdd(userOf('stu_x'), { openid: 't1', role: config.ROLE.ADMIN, name: 't1' }),
+    appCode.NO_RIGHT, '学生任命管理员');
+  await expectErr(() => svc.adminAdd(userOf('adm_x'), { openid: 't2', role: config.ROLE.ADMIN, name: 't2' }),
+    appCode.NO_RIGHT, '普通管理员任命管理员');
+});
+
+t('adminAssign 与 adminAdd 使用同一套任命权限规则', async () => {
+  seedBase();
+  const mk = (id, role, name) => mock.seed(config.COLLECTION.users, {
+    _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
+  });
+  mk('sa_1', config.ROLE.SUPER_ADMIN, '赵超管');
+  mk('tch_1', config.ROLE.TEACHER, '王老师');
+  mk('target', config.ROLE.ADMIN, '目标管理员');
+  const svc = new HrService();
+
+  // 超管通过 adminAssign 把目标调成超管 → 应被拒（超管不能任命超管）
+  await expectErr(() => svc.adminAssign(userOf('sa_1'), { openid: 'target', role: config.ROLE.SUPER_ADMIN, status: 1 }),
+    appCode.NO_RIGHT, '超管 assign 超管');
+  // 老师通过 adminAssign 把目标调成超管 → 应成功（人事管理员可任命超管）
+  await expectOk(() => svc.adminAssign(userOf('tch_1'), { openid: 'target', role: config.ROLE.SUPER_ADMIN, status: 1 }),
+    '老师 assign 超管');
+  assertEqual(userOf('target').role, config.ROLE.SUPER_ADMIN, 'assign 后目标应为超管');
+});
+
 t('init/run 在 SDK 不支持 createIndex 时明确标记需手动建索引', async () => {
   mock.reset();
   const r = await expectOk(() => initData.initAll(), 'init');

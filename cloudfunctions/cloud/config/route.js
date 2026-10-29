@@ -48,11 +48,11 @@ module.exports = {
   'venue/close_list': { controller: 'venue_controller', action: 'closeList', role: 3 },
   'log/list': { controller: 'log_controller', action: 'list', role: 3 },
 
-  // ---------- 人事（老师/主席专属） ----------
-  'hr/admin_list': { controller: 'hr_controller', action: 'adminList', role: 4 },
-  'hr/admin_add': { controller: 'hr_controller', action: 'adminAdd', role: 4 },
+  // ---------- 人事（老师/主席专属；任命类接口超管也可进入） ----------
+  'hr/admin_list': { controller: 'hr_controller', action: 'adminList', role: 3 },
+  'hr/admin_add': { controller: 'hr_controller', action: 'adminAdd', role: 3 },
   'hr/admin_remove': { controller: 'hr_controller', action: 'adminRemove', role: 4 },
-  'hr/admin_assign': { controller: 'hr_controller', action: 'adminAssign', role: 4 },
+  'hr/admin_assign': { controller: 'hr_controller', action: 'adminAssign', role: 3 },
   'hr/student_list': { controller: 'hr_controller', action: 'studentList', role: 4 },
   'hr/student_detail': { controller: 'hr_controller', action: 'studentDetail', role: 4 },
   'hr/student_edit': { controller: 'hr_controller', action: 'studentEdit', role: 4 },
@@ -66,4 +66,7 @@ module.exports = {
   // ---------- 定时任务（由触发器/密钥触发，不走鉴权） ----------
   'job/expire': { controller: 'job_controller', action: 'expire', role: 0 },
   'job/notify': { controller: 'job_controller', action: 'notify', role: 0 },
+
+  // ---------- 云端冒烟测试（受 job_secret 保护，application 中特判） ----------
+  'smoke/run': { controller: 'smoke_controller', action: 'run', role: 0 },
 };
