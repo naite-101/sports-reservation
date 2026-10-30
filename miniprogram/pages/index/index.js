@@ -30,7 +30,11 @@ Page({
 
       const notice = await request.call('notice/latest', {}, { silent: true });
       if (notice && notice._id) {
-        this.setData({ notice: notice, showNotice: true });
+        // 本次会话内同一公告只弹一次，避免切页后重复弹出；公告更新（新 _id）仍会弹出
+        if (app.globalData.shownNoticeId !== notice._id) {
+          app.globalData.shownNoticeId = notice._id;
+          this.setData({ notice: notice, showNotice: true });
+        }
       }
     } catch (e) {
       // 静默处理，页面仍可展示

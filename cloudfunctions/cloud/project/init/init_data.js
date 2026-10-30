@@ -38,15 +38,18 @@ async function createCollections() {
 }
 
 async function initVenues() {
-  const count = await VenueModel.count({});
-  if (count > 0) return { skipped: true, count: count };
-
   const now = timeUtil.now();
   let total = 0;
+  let created = 0;
   for (const type in config.VENUE_TYPES) {
     const info = config.VENUE_TYPES[type];
     for (let i = 1; i <= info.count; i++) {
       const venueKey = type + '#' + i;
+      total++;
+      // 幂等补齐：只补缺失场地，不覆盖已存在场地（避免重置 closed 等运营状态）。
+      // 修复「先建了部分馆后重跑 init，因 count>0 直接跳过导致某馆(如健身房)永远缺失」的问题。
+      const exist = await VenueModel.getOne(venueKey);
+      if (exist) continue;
       await VenueModel.insert({
         _id: venueKey,
         venue_key: venueKey,
@@ -57,10 +60,10 @@ async function initVenues() {
         closed_until: 0,
         update_time: now,
       });
-      total++;
+      created++;
     }
   }
-  return { skipped: false, count: total };
+  return { skipped: created === 0, count: total, created: created };
 }
 
 async function initTimeSlots() {

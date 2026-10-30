@@ -30,7 +30,7 @@ class VenueService extends BaseService {
           court_no: v.court_no,
           closed: !!(v.closed && (!v.closed_until || v.closed_until > now)),
         }));
-      result.push({ venue_type: type, venue_type_name: info.name, count: info.count, courts: courts });
+      result.push({ venue_type: type, venue_type_name: info.name, count: courts.length, courts: courts });
     }
     return result;
   }

@@ -414,3 +414,22 @@ t('init/run 在 SDK 不支持 createIndex 时明确标记需手动建索引', as
   assert(/手动/.test(note) && note.indexOf('无需') < 0,
     'note 应明确提示需在控制台手动创建（不得声称已自动创建），实际：' + note);
 });
+
+t('initVenues 幂等补齐缺失场馆（已有部分场馆时重跑仍能补出健身房）', async () => {
+  mock.reset();
+  // 模拟「旧版/中断只建了 badminton#1，其余 31 个场地缺失」的部署状态；
+  // 且 badminton#1 处于「闭馆」运营态，用于验证补齐全不会覆盖已有场地的运营状态
+  mock.seed(config.COLLECTION.venues, {
+    _id: 'badminton#1', venue_key: 'badminton#1', venue_type: 'badminton',
+    venue_type_name: '羽毛球场', court_no: 1, closed: true, closed_until: 9999999999999, update_time: 0,
+  });
+  const r = await initData.initVenues();
+  assertEqual(r.created, 31, '应补齐缺失的 31 个场地');
+  assertEqual(mock.size(config.COLLECTION.venues), 32, '补齐后应共 32 个场地');
+  const gym = mock.dump(config.COLLECTION.venues).filter((v) => v.venue_type === 'gym');
+  assertEqual(gym.length, 20, '健身房应有 20 个场地');
+  // 已存在的场地不被覆盖（闭馆运营状态应保留，而非被重置为默认 closed:false）
+  const b1 = mock.dump(config.COLLECTION.venues).find((v) => v.venue_key === 'badminton#1');
+  assertEqual(b1.closed, true, '已存在场地的 closed 状态应保留');
+  assertEqual(b1.closed_until, 9999999999999, '已存在场地的 closed_until 应保留');
+});

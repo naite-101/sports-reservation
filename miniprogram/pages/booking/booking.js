@@ -107,11 +107,11 @@ Page({
     }
     wx.showLoading({ title: '提交中...' });
     try {
-      const res = await request.call('reservation/create', {
+      await request.call('reservation/create', {
         date: date,
         slot_key: activeSlotKey,
         venue_key: selectedCourt,
-      });
+      }, { silent: true });
       wx.hideLoading();
       wx.showModal({
         title: '预约成功',
@@ -123,8 +123,23 @@ Page({
       });
     } catch (e) {
       wx.hideLoading();
-      // 错误已 toast
+      this.showBookingError(e);
       this.loadCourts();
     }
+  },
+
+  /** 预约失败时按错误码给出明确提示（silent 调用后自行 hideLoading+toast，避免提示被吞） */
+  showBookingError(e) {
+    const code = e && e.code;
+    const titleMap = {
+      4100: '该场地已被预约',
+      4101: '您在该时段已预约其他场地',
+      4102: '不在预约开放时间',
+      4106: '该场地临时闭馆，不可预约',
+      4010: '请先完善个人信息',
+      4004: '您已被限制预约',
+    };
+    const title = titleMap[code] || (e && e.msg) || '预约失败，请重试';
+    wx.showToast({ title: title, icon: 'none', duration: 2500 });
   },
 });

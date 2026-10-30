@@ -85,12 +85,13 @@ class ReservationService extends BaseService {
       this.AppError('该场地临时闭馆，不可预约', appCode.VENUE_CLOSED);
     }
 
-    // 唯一索引无法由 SDK 自动创建（见 README 第 5 步），缺索引时这里补一次跨场地查重
-    const dupCntPre = await ReservationModel.count({
-      student_openid: openId, date: date, slot_key: slot_key,
-      venue_key: ['!=', venue_key],
-    });
-    if (dupCntPre > 0) {
+    // 唯一索引无法由 SDK 自动创建（见 README 第 5 步），缺索引时这里补一次跨场地查重。
+    // 拉取该学生该日期该场次的全量预约后自行判断，避免依赖 neq 数据库条件在不同版本上的兼容差异。
+    const existing = await ReservationModel.getAll(
+      { student_openid: openId, date: date, slot_key: slot_key },
+      'venue_key'
+    );
+    if (existing.some((r) => r.venue_key && r.venue_key !== venue_key)) {
       this.AppError('您在该时段已预约其他场地', appCode.DUPLICATE_SLOT);
     }
 
