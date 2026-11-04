@@ -4,6 +4,7 @@
 const BaseService = require('./base_service.js');
 const ReservationRecordModel = require('../model/reservation_record_model.js');
 const ReservationModel = require('../model/reservation_model.js');
+const StudentSlotLockModel = require('../model/student_slot_lock_model.js');
 const BlacklistService = require('./blacklist_service.js');
 const MessageService = require('./message_service.js');
 const timeUtil = require('../../framework/utils/time_util.js');
@@ -44,9 +45,10 @@ class JobService extends BaseService {
       if (updated === 1) {
         await blacklistService.applyAutoBlacklist(r.student_openid, r.student_name);
         processed++;
-        // 同步释放实时占用表 reservations（避免该场地长期处于「已约」状态）
+        // 同步释放实时占用表 reservations（避免该场地长期处于「已约」状态）+ 学生时段锁
         try {
           await ReservationModel.del(r.res_id);
+          await StudentSlotLockModel.del(StudentSlotLockModel.key(r.student_openid, r.date, r.slot_key));
         } catch (e) {
           console.error('[expire] 释放占用失败 res_id=' + r.res_id, e);
         }

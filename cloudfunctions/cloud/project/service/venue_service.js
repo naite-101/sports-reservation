@@ -5,6 +5,7 @@ const BaseService = require('./base_service.js');
 const VenueModel = require('../model/venue_model.js');
 const ReservationModel = require('../model/reservation_model.js');
 const ReservationRecordModel = require('../model/reservation_record_model.js');
+const StudentSlotLockModel = require('../model/student_slot_lock_model.js');
 const TimeSlotModel = require('../model/time_slot_model.js');
 const ConfigModel = require('../model/config_model.js');
 const OperationLogModel = require('../model/operation_log_model.js');
@@ -113,6 +114,9 @@ class VenueService extends BaseService {
     for (const b of pendings) {
       try {
         await dbUtil.getDb().collection(config.COLLECTION.reservations).doc(b._id).remove();
+        // 同步释放学生时段锁，避免锁残留导致学生无法再约同时段其他场地
+        await dbUtil.getDb().collection(config.COLLECTION.student_slot_locks)
+          .doc(StudentSlotLockModel.key(b.student_openid, b.date, b.slot_key)).remove();
       } catch (e) {
         console.error('[venue_close] 释放占用失败 res_id=' + b._id, e);
       }

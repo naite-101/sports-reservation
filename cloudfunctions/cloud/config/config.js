@@ -41,6 +41,9 @@ module.exports = {
     configs: 'configs',
     qrcode_tokens: 'qrcode_tokens',
     banners: 'banners',
+    // 学生时段锁：_id = `${openid}_${date}_${slot_key}`，用主键天然唯一兜底「同一学生同一时段只约 1 个场地」，
+    // 替代需要控制台手动创建的 uniq_student_slot 唯一索引（SDK 无法自动建索引）。
+    student_slot_locks: 'student_slot_locks',
   },
 
   // 场馆类型与场地数量

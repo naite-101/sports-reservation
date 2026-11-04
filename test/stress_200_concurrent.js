@@ -23,7 +23,7 @@ const appCode = require(path.join(CF, 'framework/core/app_code.js'));
 const ReservationService = require(path.join(CF, 'project/service/reservation_service.js'));
 const initData = require(path.join(CF, 'project/init/init_data.js'));
 
-const N = 200; // 并发人数
+const N = Number(process.argv[2]) || 1000; // 并发人数（默认 1000，可用命令行参数覆盖）
 
 function setup() {
   mock.reset();
@@ -133,7 +133,7 @@ async function main() {
     results.other === 0;
 
   console.log('==============================');
-  console.log(pass ? '结论：PASS ✓（仅 1 人成功，199 人被正确拒绝，无未捕获异常/500）' : '结论：FAIL ✗');
+  console.log(pass ? ('结论：PASS ✓（仅 1 人成功，' + (N - 1) + ' 人被正确拒绝，无未捕获异常/500）') : '结论：FAIL ✗');
   console.log('==============================');
   process.exit(pass ? 0 : 1);
 }

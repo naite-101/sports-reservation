@@ -135,7 +135,9 @@ async function initAdmin() {
 }
 
 /**
- * 创建索引（关键：uniq_student_slot 保证「同一学生同一时间窗跨场馆只约 1 个」）
+ * 创建索引（可选优化项）
+ * 说明：防重复的正确性已由 student_slot_locks 锁表（_id 主键天然唯一）兜底，见 reservation_service.create；
+ *       这里的 uniq_student_slot 仅作「查询优化」（加速按学生+日期+场次检索），缺失不影响防重复正确性。
  * 云开发数据库 createIndex 在索引已存在时会报错，这里把「已存在」视为成功。
  */
 async function createIndexes() {
@@ -153,10 +155,10 @@ async function createIndexes() {
   ];
   const coll = dbUtil.getDb().collection(collName);
   // wx-server-sdk 及其依赖（@cloudbase/node-sdk、@cloudbase/database）都不提供 createIndex，
-  // 实际必然走下面的降级分支，索引需在控制台手动创建。
+  // 实际必然走下面的降级分支。此索引非必需，无需在控制台手动创建即可保证正确性。
   if (typeof coll.createIndex !== 'function') {
-    console.warn('[init] 当前 wx-server-sdk 不支持 createIndex，请按 README 第 5 步在控制台手动创建唯一索引 uniq_student_slot（否则防重复仅依赖应用层校验，存在并发竞态）');
-    return ['uniq_student_slot(manual-required)'];
+    console.info('[init] 防重复正确性已由 student_slot_locks 锁表兜底；uniq_student_slot 仅作可选查询优化，无需手动创建');
+    return ['uniq_student_slot(optional)'];
   }
   const created = [];
   for (const idx of indexes) {
@@ -192,7 +194,7 @@ async function initAll() {
     time_slots: slots,
     configs: configs,
     admin: admin,
-    note: 'uniq_student_slot 需在云开发控制台手动创建（当前 wx-server-sdk 不提供 createIndex），见 README 第 5 步',
+    note: '防重复正确性已由 student_slot_locks 锁表兜底；uniq_student_slot 唯一索引仅为可选查询优化（SDK 不支持自动创建，无需手动建）',
   };
 }
 

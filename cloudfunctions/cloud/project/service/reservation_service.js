@@ -4,6 +4,7 @@
 const BaseService = require('./base_service.js');
 const ReservationModel = require('../model/reservation_model.js');
 const ReservationRecordModel = require('../model/reservation_record_model.js');
+const StudentSlotLockModel = require('../model/student_slot_lock_model.js');
 const VenueModel = require('../model/venue_model.js');
 const TimeSlotModel = require('../model/time_slot_model.js');
 const ConfigModel = require('../model/config_model.js');
@@ -85,7 +86,7 @@ class ReservationService extends BaseService {
       this.AppError('该场地临时闭馆，不可预约', appCode.VENUE_CLOSED);
     }
 
-    // 唯一索引无法由 SDK 自动创建（见 README 第 5 步），缺索引时这里补一次跨场地查重。
+    // 应用层快速查重（事务外先拦一次，减少事务开销）；并发兜底由下方事务内 student_slot_locks._id 主键保证。
     // 拉取该学生该日期该场次的全量预约后自行判断，避免依赖 neq 数据库条件在不同版本上的兼容差异。
     const existing = await ReservationModel.getAll(
       { student_openid: openId, date: date, slot_key: slot_key, status: 'pending' },
@@ -128,9 +129,21 @@ class ReservationService extends BaseService {
       update_time: now,
     };
 
+    // 学生时段锁：_id = openid_date_slot，主键天然唯一，兜底「同一学生同一时段只约 1 个场地」
+    const lockId = StudentSlotLockModel.key(openId, date, slot_key);
+    const lockData = {
+      _id: lockId,
+      student_openid: openId,
+      date: date,
+      slot_key: slot_key,
+      venue_key: venue_key,
+      res_id: resId,
+      create_time: now,
+    };
+
     try {
       await dbUtil.runTransaction(async (t) => {
-        // 事务内 doc 级预检：场地是否已占用（命中 -> 4100）
+        // 1) 事务内 doc 级预检：场地是否已占用（命中 -> 4100）
         let occupied = null;
         try {
           const oc = await t.collection(config.COLLECTION.reservations).doc(resId).get();
@@ -153,7 +166,18 @@ class ReservationService extends BaseService {
           throw new AppError('该场地已被预约', appCode.VENUE_TAKEN);
         }
 
-        // 事务内只做 doc 级操作 + add；「不超约/防重复」由 _id 主键 + uniq_student_slot 唯一索引兜底
+        // 2) 学生时段锁：占锁（_id 冲突 = 该学生该时段已约其他场地 -> 4101），并发下仍可靠
+        try {
+          await t.collection(config.COLLECTION.student_slot_locks).add({ data: lockData });
+        } catch (e) {
+          const m = String((e && (e.errMsg || e.message)) || '');
+          if (m.indexOf('duplicate') >= 0 || m.indexOf('dup') >= 0 || m.indexOf('already exist') >= 0) {
+            throw new AppError('您在该时段已预约其他场地', appCode.DUPLICATE_SLOT);
+          }
+          throw e;
+        }
+
+        // 3) 事务内 add：场地不超约由 reservations._id 主键兜底；防重复由上方 student_slot_locks._id 主键兜底
         await t.collection(config.COLLECTION.reservations).add({ data: resData });
         await t.collection(config.COLLECTION.reservation_records).add({ data: recordData });
       });
@@ -197,8 +221,10 @@ class ReservationService extends BaseService {
     }
 
     await dbUtil.runTransaction(async (t) => {
-      // 事务内仅做占用表 doc 级删除，立即释放场地（关键：保证他人可再约）
+      // 事务内同时删除占用表 + 学生时段锁，立即释放场地（关键：保证他人可再约、本人可再约同时段其他场地）
       await t.collection(config.COLLECTION.reservations).doc(res_id).remove();
+      await t.collection(config.COLLECTION.student_slot_locks)
+        .doc(StudentSlotLockModel.key(openId, res.date, res.slot_key)).remove();
     });
 
     // 流水表更新移到事务外（事务外 where 合法；失败可由 job/expire 兜底）

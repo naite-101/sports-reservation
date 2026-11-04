@@ -82,7 +82,8 @@ function seedBase() {
     _id: 'adm_1', openid: 'adm_1', role: 2, name: '管理员', info_completed: true, status: 1,
     black_until: 0, create_time: 0, update_time: 0,
   });
-  // 真实环境靠 uniq_student_slot 唯一索引兜底，这里显式模拟
+  // 可选：模拟真实环境可能已建的 uniq_student_slot 唯一索引（仅作查询优化）。
+  // 防重复的正确性已由 student_slot_locks 锁表（_id 主键天然唯一）兜底，不依赖此索引。
   mock.setUniqueIndexes([{
     coll: config.COLLECTION.reservations,
     name: 'uniq_student_slot',
@@ -162,13 +163,29 @@ t('同一学生抢自己已占的同一场地返回 4100', async () => {
     appCode.VENUE_TAKEN, '重复预约同一场地');
 });
 
-t('无唯一索引时，同一学生同一时间窗跨场馆仍被拦（应用层兜底）', async () => {
+t('同一学生同一时间窗跨场馆约第二个场地被拦（无唯一索引下也可靠）', async () => {
   seedBase();
-  mock.setUniqueIndexes([]); // 模拟「索引没建成功」的真实部署状态
+  mock.setUniqueIndexes([]); // 模拟「唯一索引没建」的真实部署状态（现由锁表兜底，索引非必需）
   setNow(TODAY, '10:00');
   await expectOk(() => book('stu_A', { date: TODAY, slot_key: '1820_1930', venue_key: 'badminton#1' }), '第一单');
   await expectErr(() => book('stu_A', { date: TODAY, slot_key: '1820_1930', venue_key: 'pingpong#1' }),
     appCode.DUPLICATE_SLOT, '同时间窗跨场馆第二单');
+  assertEqual(mock.size(config.COLLECTION.student_slot_locks), 1, '应只有 1 条学生时段锁');
+});
+
+t('锁表兜底：应用层查重漏掉（签到后）时，锁主键冲突仍拦截跨场馆', async () => {
+  seedBase();
+  mock.setUniqueIndexes([]);
+  setNow(TODAY, '10:00');
+  await expectOk(() => book('stu_A', { date: TODAY, slot_key: '1820_1930', venue_key: 'badminton#1' }), '第一单');
+
+  // 把占用记录改成 checked_in（模拟已签到），使应用层查重（status=pending）查不到；
+  // 此时只有 student_slot_locks 锁表的主键冲突能兜底拦截。
+  const res = mock.dump(config.COLLECTION.reservations)[0];
+  mock.seed(config.COLLECTION.reservations, Object.assign({}, res, { status: 'checked_in' }));
+
+  await expectErr(() => book('stu_A', { date: TODAY, slot_key: '1820_1930', venue_key: 'pingpong#1' }),
+    appCode.DUPLICATE_SLOT, '锁表兜底拦截签到后再约同时段');
 });
 
 /* ================= 3. 取消与释放 ================= */
@@ -178,6 +195,7 @@ t('取消后场地可被他人重新预约', async () => {
   const a = await expectOk(() => book('stu_A', { date: TODAY, slot_key: '1820_1930', venue_key: 'badminton#6' }), 'A 预约');
   await expectOk(() => new ReservationService().cancel('stu_A', { res_id: a.res_id }), 'A 取消');
   assertEqual(mock.size(config.COLLECTION.reservations), 0, '取消应物理删除占用');
+  assertEqual(mock.size(config.COLLECTION.student_slot_locks), 0, '取消应释放学生时段锁');
   const rec = mock.dump(config.COLLECTION.reservation_records)[0];
   assertEqual(rec.status, 'cancelled', '流水应为 cancelled（保留历史）');
   await expectOk(() => book('stu_B', { date: TODAY, slot_key: '1820_1930', venue_key: 'badminton#6' }), 'B 抢同一场地');
@@ -211,6 +229,7 @@ t('爽约扫描：流水 expired + 释放占用 + 自动拉黑 10 天', async ()
 
   // 关键：占用必须被释放，否则该场地会永久显示「已约」（原缺陷即此处删错主键）
   assertEqual(mock.size(config.COLLECTION.reservations), 0, '爽约后占用应被释放');
+  assertEqual(mock.size(config.COLLECTION.student_slot_locks), 0, '爽约后学生时段锁应被释放');
   const st = await expectOk(() => new ReservationService().status(
     { date: TODAY, slot_key: '1820_1930', venue_type: 'badminton' }), '查询场地状态');
   const court = st.find((v) => v.venue_key === 'badminton#4');
@@ -232,6 +251,7 @@ t('被闭馆取消的预约，当晚不会再被判爽约拉黑', async () => {
   const closeRes = await expectOk(() => new VenueService().close(userOf('adm_1'),
     { venue_key: 'badminton#5', closed: true, closed_until: 0 }), '闭馆');
   assertEqual(closeRes.cancelled_bookings, 1, '闭馆应联动取消 1 条预约');
+  assertEqual(mock.size(config.COLLECTION.student_slot_locks), 0, '闭馆取消应释放学生时段锁');
 
   setNow(TODAY, '19:31');
   await expectOk(() => new JobService().expire(), '当晚爽约扫描');
@@ -295,25 +315,27 @@ t('人事撤销管理员：不能操作同级或更高权限的成员', async ()
   const mk = (id, role, name) => mock.seed(config.COLLECTION.users, {
     _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
   });
-  mk('tch_1', config.ROLE.TEACHER, '王老师');
-  mk('tch_2', config.ROLE.TEACHER, '孙老师');
-  mk('chair_1', config.ROLE.CHAIRMAN, '李主席');
+  mk('hr_1', config.ROLE.HR_ADMIN, '王人事');
+  mk('hr_2', config.ROLE.HR_ADMIN, '孙人事');
   mk('sa_1', config.ROLE.SUPER_ADMIN, '赵超管');
-  mk('adm_2', config.ROLE.ADMIN, '钱管理员');
+  mk('sa_2', config.ROLE.SUPER_ADMIN, '钱超管');
+  mk('adm_2', config.ROLE.ADMIN, '孙管理员');
   const svc = new HrService();
 
-  // 老师(4) 不能移除主席(5)：否则老师能开除主席
-  await expectErr(() => svc.adminRemove(userOf('tch_1'), { openid: 'chair_1' }),
-    appCode.NO_RIGHT, '老师移除主席');
-  assertEqual(userOf('chair_1').role, config.ROLE.CHAIRMAN, '被拒后主席角色不应变化');
-  // 同级也不允许
-  await expectErr(() => svc.adminRemove(userOf('tch_1'), { openid: 'tch_2' }),
-    appCode.NO_RIGHT, '老师移除同级老师');
-  // 向下操作正常（主席高于老师，老师高于超管）
-  await expectOk(() => svc.adminRemove(userOf('chair_1'), { openid: 'tch_1' }), '主席移除老师');
-  await expectOk(() => svc.adminRemove(userOf('tch_2'), { openid: 'sa_1' }), '老师移除超管');
+  // 人事管理员(4) 不能移除同级人事管理员(4)
+  await expectErr(() => svc.adminRemove(userOf('hr_1'), { openid: 'hr_2' }),
+    appCode.NO_RIGHT, '人事管理员移除同级人事管理员');
+  assertEqual(userOf('hr_2').role, config.ROLE.HR_ADMIN, '被拒后角色不应变化');
+  // 超管(3) 不能移除更高权限的人事管理员(4)
+  await expectErr(() => svc.adminRemove(userOf('sa_1'), { openid: 'hr_1' }),
+    appCode.NO_RIGHT, '超管移除人事管理员');
+  // 超管(3) 不能移除同级超管(3)
+  await expectErr(() => svc.adminRemove(userOf('sa_1'), { openid: 'sa_2' }),
+    appCode.NO_RIGHT, '超管移除同级超管');
+  // 向下操作正常：人事管理员(4) 可移除超管(3)、普通管理员(2)
+  await expectOk(() => svc.adminRemove(userOf('hr_1'), { openid: 'sa_1' }), '人事管理员移除超管');
   assertEqual(userOf('sa_1').role, config.ROLE.STUDENT, '超管应被降为学生');
-  await expectOk(() => svc.adminRemove(userOf('tch_2'), { openid: 'adm_2' }), '老师移除普通管理员');
+  await expectOk(() => svc.adminRemove(userOf('hr_1'), { openid: 'adm_2' }), '人事管理员移除普通管理员');
 });
 
 t('任命权限：超管只能任命普通管理员', async () => {
@@ -334,37 +356,26 @@ t('任命权限：超管只能任命普通管理员', async () => {
   await expectErr(() => svc.adminAdd(op(), { openid: 'new_sa', role: config.ROLE.SUPER_ADMIN, name: '新超管' }),
     appCode.NO_RIGHT, '超管任命超管');
 
-  // 超管(3) 不能任命老师(4) / 主席(5)
-  await expectErr(() => svc.adminAdd(op(), { openid: 'new_tch', role: config.ROLE.TEACHER, name: '新老师' }),
-    appCode.NO_RIGHT, '超管任命老师');
-  await expectErr(() => svc.adminAdd(op(), { openid: 'new_chair', role: config.ROLE.CHAIRMAN, name: '新主席' }),
-    appCode.NO_RIGHT, '超管任命主席');
+  // 超管(3) 不能任命人事管理员(4)
+  await expectErr(() => svc.adminAdd(op(), { openid: 'new_hr', role: config.ROLE.HR_ADMIN, name: '新人事' }),
+    appCode.NO_RIGHT, '超管任命人事管理员');
 });
 
-t('任命权限：人事管理员(老师/主席)可任命到人事管理员和超管', async () => {
+t('任命权限：人事管理员可任命到人事管理员和超管', async () => {
   seedBase();
   const mk = (id, role, name) => mock.seed(config.COLLECTION.users, {
     _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
   });
-  mk('tch_1', config.ROLE.TEACHER, '王老师');
-  mk('chair_1', config.ROLE.CHAIRMAN, '李主席');
+  mk('hr_1', config.ROLE.HR_ADMIN, '王人事');
   const svc = new HrService();
 
-  // 老师(4) 能任命：普通管理员、超管、老师、主席
-  await expectOk(() => svc.adminAdd(userOf('tch_1'), { openid: 'a1', role: config.ROLE.ADMIN, name: 'a1' }),
-    '老师任命普通管理员');
-  await expectOk(() => svc.adminAdd(userOf('tch_1'), { openid: 'a2', role: config.ROLE.SUPER_ADMIN, name: 'a2' }),
-    '老师任命超管');
-  await expectOk(() => svc.adminAdd(userOf('tch_1'), { openid: 'a3', role: config.ROLE.TEACHER, name: 'a3' }),
-    '老师任命老师');
-  await expectOk(() => svc.adminAdd(userOf('tch_1'), { openid: 'a4', role: config.ROLE.CHAIRMAN, name: 'a4' }),
-    '老师任命主席');
-
-  // 主席(5) 同样能任命人事管理员
-  await expectOk(() => svc.adminAdd(userOf('chair_1'), { openid: 'a5', role: config.ROLE.TEACHER, name: 'a5' }),
-    '主席任命老师');
-  await expectOk(() => svc.adminAdd(userOf('chair_1'), { openid: 'a6', role: config.ROLE.CHAIRMAN, name: 'a6' }),
-    '主席任命主席');
+  // 人事管理员(4) 能任命：普通管理员(2)、超管(3)、人事管理员(4)
+  await expectOk(() => svc.adminAdd(userOf('hr_1'), { openid: 'a1', role: config.ROLE.ADMIN, name: 'a1' }),
+    '人事管理员任命普通管理员');
+  await expectOk(() => svc.adminAdd(userOf('hr_1'), { openid: 'a2', role: config.ROLE.SUPER_ADMIN, name: 'a2' }),
+    '人事管理员任命超管');
+  await expectOk(() => svc.adminAdd(userOf('hr_1'), { openid: 'a3', role: config.ROLE.HR_ADMIN, name: 'a3' }),
+    '人事管理员任命人事管理员');
 });
 
 t('任命权限：学生/普通管理员无权任命', async () => {
@@ -389,30 +400,30 @@ t('adminAssign 与 adminAdd 使用同一套任命权限规则', async () => {
     _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
   });
   mk('sa_1', config.ROLE.SUPER_ADMIN, '赵超管');
-  mk('tch_1', config.ROLE.TEACHER, '王老师');
+  mk('hr_1', config.ROLE.HR_ADMIN, '王人事');
   mk('target', config.ROLE.ADMIN, '目标管理员');
   const svc = new HrService();
 
   // 超管通过 adminAssign 把目标调成超管 → 应被拒（超管不能任命超管）
   await expectErr(() => svc.adminAssign(userOf('sa_1'), { openid: 'target', role: config.ROLE.SUPER_ADMIN, status: 1 }),
     appCode.NO_RIGHT, '超管 assign 超管');
-  // 老师通过 adminAssign 把目标调成超管 → 应成功（人事管理员可任命超管）
-  await expectOk(() => svc.adminAssign(userOf('tch_1'), { openid: 'target', role: config.ROLE.SUPER_ADMIN, status: 1 }),
-    '老师 assign 超管');
+  // 人事管理员通过 adminAssign 把目标调成超管 → 应成功（人事管理员可任命超管）
+  await expectOk(() => svc.adminAssign(userOf('hr_1'), { openid: 'target', role: config.ROLE.SUPER_ADMIN, status: 1 }),
+    '人事管理员 assign 超管');
   assertEqual(userOf('target').role, config.ROLE.SUPER_ADMIN, 'assign 后目标应为超管');
 });
 
-t('init/run 在 SDK 不支持 createIndex 时明确标记需手动建索引', async () => {
+t('init/run 明确标记：唯一索引非必需（防重复已由锁表兜底）', async () => {
   mock.reset();
   const r = await expectOk(() => initData.initAll(), 'init');
-  // wx-server-sdk 的 Collection 没有 createIndex，脚本必然降级；
-  // 这里锁住「降级时必须显式告知」的行为，避免有人把提示删掉后以为索引已自动创建
+  // 锁表兜底后，uniq_student_slot 仅作可选查询优化，不再要求手动建索引；
+  // 这里锁住「降级时必须显式告知非必需」的行为，避免有人误以为仍需手动建索引。
   const idx = r.indexes || [];
-  assert(idx.some((n) => String(n).indexOf('manual-required') >= 0),
-    '降级时应返回 manual-required 标记，实际：' + JSON.stringify(idx));
+  assert(idx.some((n) => String(n).indexOf('optional') >= 0),
+    '锁表兜底后唯一索引应标记为可选，实际：' + JSON.stringify(idx));
   const note = String(r.note || '');
-  assert(/手动/.test(note) && note.indexOf('无需') < 0,
-    'note 应明确提示需在控制台手动创建（不得声称已自动创建），实际：' + note);
+  assert(/锁表|student_slot_locks/.test(note),
+    'note 应说明防重复已由锁表兜底，实际：' + note);
 });
 
 t('initVenues 幂等补齐缺失场馆（已有部分场馆时重跑仍能补出健身房）', async () => {

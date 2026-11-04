@@ -28,13 +28,14 @@ test('错误码与 ARCHITECTURE §9.2 一致', () => {
   assertEqual(appCode.CANCEL_TOO_LATE, 4107);
 });
 
-test('角色常量与架构一致', () => {
+test('角色常量与架构一致（老师/主席已合并为人事管理员 HR_ADMIN=4）', () => {
   assertEqual(config.ROLE.ANONYMOUS, 0);
   assertEqual(config.ROLE.STUDENT, 1);
   assertEqual(config.ROLE.ADMIN, 2);
   assertEqual(config.ROLE.SUPER_ADMIN, 3);
-  assertEqual(config.ROLE.TEACHER, 4);
-  assertEqual(config.ROLE.CHAIRMAN, 5);
+  assertEqual(config.ROLE.HR_ADMIN, 4);
+  assertEqual(config.ROLE.TEACHER, undefined, 'TEACHER 应已删除（合并进 HR_ADMIN）');
+  assertEqual(config.ROLE.CHAIRMAN, undefined, 'CHAIRMAN 应已删除（合并进 HR_ADMIN）');
 });
 
 test('业务常量：二维码 20s / 爽约 10 天 / 签到前 15 分钟 / 开放 21:00', () => {
