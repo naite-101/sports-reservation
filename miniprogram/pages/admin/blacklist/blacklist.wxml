@@ -1,10 +1,11 @@
 <view class="container">
-  <view class="btn" bindtap="toggleAdd">{{showAdd ? '收起' : '+ 手动拉黑'}}</view>
+  <t-button theme="primary" block="{{true}}" bind:tap="toggleAdd">{{showAdd ? '收起' : '+ 手动拉黑'}}</t-button>
 
   <view class="card" wx:if="{{showAdd}}">
     <view class="form-item">
-      <view class="form-label">学生 openid</view>
-      <input class="form-input" value="{{addForm.student_openid}}" data-field="student_openid" bindinput="onInput" placeholder="输入学生 openid" />
+      <view class="form-label">学号 / 姓名 / openid</view>
+      <input class="form-input" value="{{addForm.student_openid}}" data-field="student_openid" bindinput="onInput" placeholder="输入学生学号 / 姓名 / openid" />
+      <view class="form-tip">提示：学号、姓名、openid 填其中任意一项即可，建议优先填学号（更精准、避免同名误伤）</view>
     </view>
     <view class="form-item">
       <view class="form-label">拉黑天数</view>
@@ -14,20 +15,20 @@
       <view class="form-label">原因</view>
       <input class="form-input" value="{{addForm.reason}}" data-field="reason" bindinput="onInput" placeholder="拉黑原因" />
     </view>
-    <view class="btn" bindtap="submitAdd">确认拉黑</view>
+    <t-button theme="primary" block="{{true}}" bind:tap="submitAdd">确认拉黑</t-button>
   </view>
 
   <view class="card" wx:for="{{list}}" wx:key="_id">
     <view class="space-between">
       <text style="font-weight: 600;">{{item.student_name || item.student_openid}}</text>
-      <text class="tag {{item.status === 'active' ? 'red' : 'gray'}}">{{item.status === 'active' ? '生效中' : '已解除'}}</text>
+      <t-tag size="small" theme="{{item.status === 'active' ? 'danger' : 'default'}}" variant="light">{{item.status === 'active' ? '生效中' : '已解除'}}</t-tag>
     </view>
     <view class="text-muted" style="margin-top: 8rpx;">渠道：{{item.channel === 'auto' ? '爽约自动' : '手动'}}</view>
     <view class="text-muted">原因：{{item.reason}}</view>
     <view class="text-muted">拉黑：{{item.startText}} 至 {{item.endText}}</view>
     <view class="row" style="justify-content: flex-end; margin-top: 12rpx;" wx:if="{{role >= 3 && item.status === 'active'}}">
-      <view class="btn danger" style="padding: 8rpx 24rpx;" data-id="{{item._id}}" bindtap="release">解除拉黑</view>
+      <t-button size="small" theme="danger" data-id="{{item._id}}" bind:tap="release">解除拉黑</t-button>
     </view>
   </view>
-  <view class="empty" wx:if="{{!list.length}}">暂无黑名单记录</view>
+  <t-empty wx:if="{{!list.length}}" description="暂无黑名单记录" />
 </view>

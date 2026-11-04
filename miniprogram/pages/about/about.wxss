@@ -1,0 +1,90 @@
+/* 关于小程序：深校园绿主题 + 线性图标 */
+
+/* 页面容器：纵向 flex，让版权块贴底 */
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部品牌区：垂直居中 */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64rpx 0 40rpx;
+}
+
+/* 圆形浅绿 Logo 底 */
+.brand-logo {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 50%;
+  background: #eaf6fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28rpx;
+  overflow: hidden;
+}
+
+/* Logo 图片：铺满圆形底 */
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+}
+
+.brand-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.brand-version {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 入口列表：沿用 mine 菜单卡样式 */
+.menu-card {
+  padding: 8rpx 28rpx;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #f2f3f5;
+}
+
+.menu-item--last {
+  border-bottom: none;
+}
+
+.menu-item--hover {
+  background: #fafbfc;
+}
+
+.menu-icon {
+  margin-right: 20rpx;
+}
+
+.menu-name {
+  flex: 1;
+  font-size: 29rpx;
+  color: #333;
+}
+
+/* 底部版权：三行小字居中，固定在页面最底部 */
+.copyright {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: auto;
+  padding: 20rpx 0 40rpx;
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.6;
+}

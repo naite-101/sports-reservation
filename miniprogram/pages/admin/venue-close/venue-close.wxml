@@ -1,7 +1,15 @@
 <view class="container">
   <view class="card">
     <view class="type-tabs">
-      <view class="type-tab {{activeType === item.key ? 'active' : ''}}" wx:for="{{types}}" wx:key="key" data-key="{{item.key}}" bindtap="onTapType">{{item.name}}</view>
+      <t-tag
+        t-class="tab-tag"
+        theme="{{activeType === item.key ? 'primary' : 'default'}}"
+        variant="{{activeType === item.key ? 'dark' : 'light'}}"
+        wx:for="{{types}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bind:click="onTapType"
+      >{{item.name}}</t-tag>
     </view>
   </view>
 
@@ -9,11 +17,34 @@
     <view class="court-grid">
       <view class="court {{item.closed ? 'closed' : ''}}" wx:for="{{list}}" wx:key="venue_key">
         <view>{{item.court_no}}号</view>
-        <view class="court-status">{{item.closed ? '闭馆中' : '开放中'}}</view>
+        <view class="court-status">
+          {{item.closed ? '闭馆中' : '开放中'}}
+          <view wx:if="{{item.closed && item.closedUntilText}}" class="closed-until">至 {{item.closedUntilText}} 恢复</view>
+        </view>
         <view class="op-btn" data-key="{{item.venue_key}}" data-closed="{{item.closed}}" bindtap="toggle">
           {{item.closed ? '恢复' : '闭馆'}}
         </view>
       </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{showClosePanel}}">
+    <view class="card-title">选择恢复开放时间</view>
+    <view class="form-item">
+      <view class="form-label">恢复日期</view>
+      <picker mode="selector" range="{{closeDateRange}}" value="{{closeDateIndex}}" bindchange="onCloseDateChange">
+        <view class="form-input">{{closeDateRange[closeDateIndex]}}</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <view class="form-label">恢复时间</view>
+      <picker mode="time" value="{{closeTime}}" bindchange="onCloseTimeChange">
+        <view class="form-input">{{closeTime}}</view>
+      </picker>
+    </view>
+    <view class="row" style="gap: 16rpx;">
+      <t-button theme="primary" variant="outline" style="flex:1;" bind:tap="cancelClose">取消</t-button>
+      <t-button theme="primary" style="flex:1;" bind:tap="confirmClose">确认闭馆</t-button>
     </view>
   </view>
 </view>

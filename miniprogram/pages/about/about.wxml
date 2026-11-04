@@ -1,0 +1,31 @@
+<view class="container">
+  <!-- 顶部品牌区：Logo + 标题 + 版本号 -->
+  <view class="brand">
+    <view class="brand-logo">
+      <image class="brand-logo-img" src="/images/gym-logo.jpg" mode="aspectFit" />
+    </view>
+    <view class="brand-title">中德校体育馆预约系统</view>
+    <view class="brand-version">{{version}}</view>
+  </view>
+
+  <!-- 功能入口列表 -->
+  <view class="card menu-card">
+    <view class="menu-item" hover-class="menu-item--hover" bind:tap="goFeedback">
+      <line-icon custom-class="menu-icon" name="feedback" size="40rpx" />
+      <text class="menu-name">建议 / 问题反馈</text>
+      <line-icon name="arrow-right" size="30rpx" />
+    </view>
+    <view class="menu-item menu-item--last" hover-class="menu-item--hover" bind:tap="goDeveloper">
+      <line-icon custom-class="menu-icon" name="developer" size="40rpx" />
+      <text class="menu-name">开发者信息</text>
+      <line-icon name="arrow-right" size="30rpx" />
+    </view>
+  </view>
+
+  <!-- 底部版权 -->
+  <view class="copyright">
+    <view>如遇任何问题，可联系客服</view>
+    <view>开源鸿蒙社 版权所有</view>
+    <view>中德校体育中心服务社 使用权所有</view>
+  </view>
+</view>

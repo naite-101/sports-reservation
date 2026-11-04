@@ -1,41 +1,65 @@
 <view class="container">
-  <view class="banner" wx:if="{{blackDays > 0}}">您已被限制预约，{{blackDays}} 天内不可预约场馆</view>
+  <t-notice-bar
+    wx:if="{{blackDays > 0}}"
+    visible="{{true}}"
+    theme="error"
+    t-class="notice-banner"
+    content="您已被限制预约，{{blackDays}} 天内不可预约场馆"
+  />
 
   <view class="card">
-    <view class="card-title">预约日期：{{date}}</view>
+    <view class="card-title card-title--icon">
+      <line-icon custom-class="title-icon" name="calendar" size="32rpx" />预约日期：{{date}}
+    </view>
     <view class="text-muted" wx:if="{{isToday}}">今天可预约（{{date}}）</view>
     <view class="text-muted" wx:elif="{{!openReached}}">每天 {{openTime.hour}}:{{openTime.minute}} 开放次日预约</view>
     <view class="text-muted" wx:else>当前可预约</view>
   </view>
 
   <view class="card">
-    <view class="card-title">场馆</view>
+    <view class="card-title card-title--icon">
+      <line-icon custom-class="title-icon" name="venue" size="32rpx" />场馆
+    </view>
     <view class="type-tabs">
       <view
-        class="type-tab {{activeType === item.key ? 'active' : ''}}"
+        class="chip {{activeType === item.key ? 'chip--active' : ''}}"
         wx:for="{{types}}"
         wx:key="key"
         data-type="{{item.key}}"
-        bindtap="onTapType"
-      >{{item.name}}</view>
+        bind:tap="onTapType"
+      >
+        <view class="chip-check" wx:if="{{activeType === item.key}}">
+          <line-icon name="check" size="24rpx" />
+        </view>
+        {{item.name}}
+      </view>
     </view>
   </view>
 
   <view class="card">
-    <view class="card-title">场次</view>
+    <view class="card-title card-title--icon">
+      <line-icon custom-class="title-icon" name="clock" size="32rpx" />场次
+    </view>
     <view class="slot-tabs">
       <view
-        class="slot-tab {{activeSlotKey === item.slot_key ? 'active' : ''}}"
+        class="chip {{activeSlotKey === item.slot_key ? 'chip--active' : ''}}"
         wx:for="{{slots}}"
         wx:key="slot_key"
         data-key="{{item.slot_key}}"
-        bindtap="onTapSlot"
-      >{{item.start_time}}~{{item.end_time}}</view>
+        bind:tap="onTapSlot"
+      >
+        <view class="chip-check" wx:if="{{activeSlotKey === item.slot_key}}">
+          <line-icon name="check" size="24rpx" />
+        </view>
+        {{item.start_time}}~{{item.end_time}}
+      </view>
     </view>
   </view>
 
   <view class="card">
-    <view class="card-title">选择场地</view>
+    <view class="card-title card-title--icon">
+      <line-icon custom-class="title-icon" name="checkin" size="32rpx" />选择场地
+    </view>
     <view class="court-grid">
       <view
         class="court {{item.status}} {{selectedCourt === item.venue_key ? 'selected' : ''}}"
@@ -43,14 +67,23 @@
         wx:key="venue_key"
         data-key="{{item.venue_key}}"
         data-status="{{item.status}}"
-        bindtap="onTapCourt"
+        bind:tap="onTapCourt"
       >
-        <view>{{item.court_no}}号</view>
+        <view class="court-no">{{item.court_no}}号</view>
         <view class="court-status">{{item.status === 'available' ? '可预约' : (item.status === 'booked' ? '已约满' : '闭馆')}}</view>
+        <view class="court-check" wx:if="{{selectedCourt === item.venue_key}}">
+          <line-icon name="check" size="28rpx" />
+        </view>
       </view>
     </view>
-    <view class="empty" wx:if="{{!courts.length}}">暂无场地数据</view>
+    <t-empty wx:if="{{!courts.length}}" description="暂无场地数据" />
   </view>
 
-  <view class="btn {{(!openReached || blackDays > 0 || !selectedCourt) ? 'disabled' : ''}}" bindtap="confirmBooking">提交预约</view>
+  <t-button
+    t-class="{{(!openReached || blackDays > 0 || !selectedCourt) ? 'submit-btn--disabled' : 'submit-btn--active'}}"
+    block="{{true}}"
+    bind:tap="confirmBooking"
+  >提交预约</t-button>
+
+  <view class="booking-tip">每天 21:00 开放次日场次预约，先到先得</view>
 </view>

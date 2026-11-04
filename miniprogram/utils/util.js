@@ -52,12 +52,18 @@ function timestamp2Time(ms, fmt = 'Y-M-D h:m:s') {
   return fmt.replace(/[YMDhms]/g, (c) => map[c]);
 }
 
+/** 毫秒时间戳 -> 中文日期 "YYYY年M月D日"（不补零） */
+function timestamp2TimeCn(ms) {
+  const d = new Date(ms);
+  return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+
 function statusText(status) {
   const map = {
     pending: '待签到',
     checked_in: '已签到',
     cancelled: '已取消',
-    expired: '已过期',
+    expired: '未签到',
   };
   return map[status] || status;
 }
@@ -70,5 +76,6 @@ module.exports = {
   tomorrow: tomorrow,
   parseSlotKey: parseSlotKey,
   timestamp2Time: timestamp2Time,
+  timestamp2TimeCn: timestamp2TimeCn,
   statusText: statusText,
 };

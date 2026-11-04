@@ -49,7 +49,7 @@ Page({
   async submitAdd() {
     const f = this.data.addForm;
     if (!f.student_openid) {
-      wx.showToast({ title: '请输入学生 openid', icon: 'none' });
+      wx.showToast({ title: '请输入学号 / 姓名 / openid', icon: 'none' });
       return;
     }
     try {

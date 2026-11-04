@@ -1,4 +1,177 @@
-.arrow {
-  color: #bbb;
+/* 个人中心：深校园绿主题 + 线性图标 */
+
+/* 顶部个人信息卡 */
+.profile-card {
+  padding: 32rpx 28rpx;
+}
+
+.profile-head {
+  gap: 24rpx;
+}
+
+/* 圆形浅绿头像框（替换 t-avatar） */
+.avatar {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 50%;
+  background: #eaf6fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-name {
   font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-meta {
+  margin-top: 12rpx;
+}
+
+/* 角色标签：浅绿底 + 绿色文字 */
+.role-badge {
+  display: inline-block;
+  background: #eaf6fd;
+  color: #3557F2;
+  border-radius: 999rpx;
+  padding: 6rpx 20rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+/* 编辑文字按钮 */
+.edit-btn {
+  display: flex;
+  align-items: center;
+  background: #eaf6fd;
+  color: #3557F2;
+  border-radius: 999rpx;
+  padding: 10rpx 22rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.edit-btn--hover {
+  background: #e3f2fc;
+}
+
+.edit-btn-icon {
+  margin-right: 6rpx;
+}
+
+/* 功能列表 */
+.menu-card {
+  padding: 8rpx 28rpx;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #f2f3f5;
+}
+
+.menu-item--last {
+  border-bottom: none;
+}
+
+.menu-item--hover {
+  background: #fafbfc;
+}
+
+.menu-icon {
+  margin-right: 20rpx;
+}
+
+.menu-name {
+  flex: 1;
+  font-size: 29rpx;
+  color: #333;
+}
+
+/* 管理后台：低饱和暖橘色底卡片 */
+.admin-card {
+  display: flex;
+  align-items: center;
+  margin-top: 28rpx;
+  border-radius: 32rpx;
+  padding: 30rpx 28rpx;
+  background: #fdf1e7;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.admin-card--hover {
+  background: #fbe8d6;
+}
+
+.admin-icon {
+  margin-right: 22rpx;
+}
+
+.admin-text {
+  flex: 1;
+}
+
+.admin-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #c0713c;
+}
+
+.admin-sub {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #d79a6e;
+}
+
+/* 预约统计卡片：三格横排，靠留白分隔（无竖分割线） */
+.stats-card {
+  padding: 32rpx 16rpx 20rpx;
+}
+
+.stats-card--hover {
+  background: #fafbfc;
+}
+
+.stats-grid {
+  display: flex;
+  align-items: center;
+}
+
+.stats-item {
+  flex: 1;
+  text-align: center;
+}
+
+.stats-num {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #3557F2;
+  line-height: 1;
+}
+
+.stats-label {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 统计卡底部「查看我的预约」提示 */
+.stats-more {
+  margin-top: 24rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #3557F2;
 }

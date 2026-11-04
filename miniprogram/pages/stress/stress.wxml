@@ -4,7 +4,7 @@
   <view class="card" wx:if="{{user}}">
     <view class="card-title">当前身份</view>
     <view class="text">姓名：{{user.name || '未填写'}}</view>
-    <view class="text-muted" wx:if="{{!user.info_completed}}">⚠ 未完善个人信息，预约会被拒（4010）</view>
+    <view class="text-muted" wx:if="{{!user.info_completed}}">注意：未完善个人信息，预约会被拒（4010）</view>
   </view>
 
   <view class="card">
@@ -16,24 +16,25 @@
   <view class="card">
     <view class="card-title">场次</view>
     <view class="slot-tabs">
-      <view
-        class="slot-tab {{activeSlotKey === item.slot_key ? 'active' : ''}}"
+      <t-tag
+        theme="{{activeSlotKey === item.slot_key ? 'primary' : 'default'}}"
+        variant="{{activeSlotKey === item.slot_key ? 'dark' : 'light'}}"
         wx:for="{{slots}}"
         wx:key="slot_key"
         data-key="{{item.slot_key}}"
-        bindtap="onTapSlot"
-      >{{item.start_time}}~{{item.end_time}}</view>
+        bind:click="onTapSlot"
+      >{{item.start_time}}~{{item.end_time}}</t-tag>
     </view>
   </view>
 
   <view class="card">
     <view class="card-title">目标场地（所有人抢这个）</view>
     <view class="target" wx:if="{{targetCourt}}">{{targetCourt}}</view>
-    <view class="empty" wx:else>暂无可抢场地（可能已被抢或未开放）</view>
+    <t-empty wx:else description="暂无可抢场地（可能已被抢或未开放）" />
   </view>
 
-  <view class="btn {{(!openReached || !targetCourt) ? 'disabled' : ''}}" bindtap="grab">抢！</view>
-  <view class="btn secondary" bindtap="release">释放我抢到的场地</view>
+  <t-button theme="{{(!openReached || !targetCourt) ? 'default' : 'primary'}}" block="{{true}}" style="margin-bottom: 20rpx;" bind:tap="grab">抢！</t-button>
+  <t-button theme="primary" variant="outline" block="{{true}}" bind:tap="release">释放我抢到的场地</t-button>
 
   <view class="card" wx:if="{{lastResult}}">
     <view class="card-title">最近一次结果</view>

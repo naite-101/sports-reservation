@@ -1,8 +1,39 @@
-/* 全局样式：布局清晰可操作即可 */
+/* 全局样式：品牌蓝主题 + 柔和卡片 */
 page {
-  background-color: #f5f6f7;
+  background-color: #f6f7f8;
   font-size: 28rpx;
   color: #333;
+
+  /* TDesign 主题定制：统一为品牌蓝 #3557F2 */
+  --td-brand-color: #3557F2;
+  --td-brand-color-active: #2347D6;
+  --td-brand-color-disabled: #a9d6f2;
+  --td-brand-color-light: #e3f2fc;
+  --td-brand-color-light-active: #cfe9fb;
+  --td-success-color: #3557F2;
+  --td-success-color-1: #e3f2fc;
+  --td-text-color-link: #3557F2;
+
+  /* 设计 token：品牌蓝（变量名沿用 brand-green，避免牵连引用） */
+  --brand-green: #3557F2;
+  --brand-green-active: #2347D6;
+  --brand-green-light: #eaf6fd;
+  --brand-green-lighter: #e3f2fc;
+
+  /* 设计 token：低饱和暖橙 */
+  --brand-orange: #e8964b;
+  --brand-orange-deep: #c0713c;
+  --brand-orange-light: #fdf1e7;
+
+  /* 卡片与阴影 token：圆角 16px(32rpx)、柔和阴影 */
+  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --card-radius: 32rpx;
+
+  /* TDesign 警告色统一为低饱和暖橙 */
+  --td-warning-color: #e8964b;
+  --td-warning-color-active: #c0713c;
+  --td-warning-color-1: #fdf1e7;
+  --td-warning-color-light: #fdf1e7;
 }
 
 .container {
@@ -11,9 +42,10 @@ page {
 
 .card {
   background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 24rpx;
+  border-radius: var(--card-radius, 32rpx);
+  padding: 28rpx;
+  margin-bottom: 28rpx;
+  box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.06));
 }
 
 .card-title {
@@ -35,7 +67,7 @@ page {
 }
 
 .btn {
-  background: #1f7a4d;
+  background: #3557F2;
   color: #fff;
   border-radius: 12rpx;
   font-size: 30rpx;
@@ -45,8 +77,8 @@ page {
 
 .btn.plain {
   background: #fff;
-  color: #1f7a4d;
-  border: 1rpx solid #1f7a4d;
+  color: #3557F2;
+  border: 1rpx solid #3557F2;
 }
 
 .btn.disabled {
@@ -66,8 +98,8 @@ page {
 }
 
 .tag.green {
-  background: #e7f6ee;
-  color: #1f7a4d;
+  background: #e3f2fc;
+  color: #3557F2;
 }
 
 .tag.gray {
@@ -78,6 +110,11 @@ page {
 .tag.red {
   background: #fdecea;
   color: #d9534f;
+}
+
+.tag.orange {
+  background: #fdf1e7;
+  color: #e8964b;
 }
 
 .empty {
@@ -126,7 +163,57 @@ page {
   font-size: 28rpx;
 }
 
+.form-tip {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #b0b0b0;
+  line-height: 1.5;
+}
+
 .text-muted {
   color: #999;
   font-size: 24rpx;
+}
+
+/* ---------- TDesign 组件微调 ---------- */
+
+/* cell-group 卡片化后与全局 .card 保持一致的纵向节奏（去掉自带的左右外边距） */
+.container .t-cell-group--card {
+  margin: 0 0 24rpx;
+}
+
+/* 空状态与原生 .empty 保持相近的留白 */
+.t-empty {
+  padding: 48rpx 0;
+}
+
+/* 标签型 Tab（t-tag 用作分段选择器时的等宽与居中） */
+.tab-tag {
+  flex: 1;
+  justify-content: center;
+}
+
+/* 标签型 Tab 容器 */
+.type-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+/* 通知横幅：保留原有圆角与纵向间距 */
+.notice-banner {
+  margin-bottom: 24rpx;
+  border-radius: 12rpx;
+}
+
+/* ---------- 通用视觉增强（新增，不覆盖既有 class） ---------- */
+
+/* 区块标题：首页/预约页等分组标题 */
+.section-title {
+  display: flex;
+  align-items: center;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin: 8rpx 4rpx 20rpx;
 }

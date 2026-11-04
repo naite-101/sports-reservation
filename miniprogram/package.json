@@ -1,0 +1,8 @@
+{
+  "name": "gymreserve-miniprogram",
+  "version": "1.0.0",
+  "description": "体育馆预约小程序前端依赖",
+  "dependencies": {
+    "tdesign-miniprogram": "^1.17.0"
+  }
+}

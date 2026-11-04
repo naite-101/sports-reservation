@@ -1,28 +1,88 @@
 <view class="container">
-  <view class="card">
-    <view class="row" style="justify-content: space-between;">
-      <view>
-        <view style="font-size: 36rpx; font-weight: 600;">{{user.name || '未完善信息'}}</view>
-        <view class="text-muted" style="margin-top: 8rpx;">{{roleName}}</view>
+  <view class="card profile-card">
+    <view class="row profile-head">
+      <view class="avatar">
+        <line-icon name="user" size="56rpx" />
       </view>
-      <view class="tag green" bindtap="goProfile">编辑</view>
+      <view class="profile-info">
+        <view class="profile-name">{{user.name || '未完善信息'}}</view>
+        <view class="profile-meta">
+          <view class="role-badge" wx:if="{{roleName}}">{{roleName}}</view>
+        </view>
+      </view>
+      <view class="edit-btn" hover-class="edit-btn--hover" bind:tap="goProfile">
+        <line-icon custom-class="edit-btn-icon" name="edit" size="26rpx" />
+        <text>编辑</text>
+      </view>
     </view>
   </view>
 
-  <view class="banner" wx:if="{{blackDays > 0}}">您已被限制预约，{{blackDays}} 天内不可预约场馆</view>
-
-  <view class="card">
-    <view class="cell" bindtap="goQrcode"><text>我的动态二维码</text><text class="arrow">›</text></view>
-    <view class="cell" bindtap="goReservations"><text>我的预约</text><text class="arrow">›</text></view>
-    <view class="cell" bindtap="goRecords"><text>近7天记录</text><text class="arrow">›</text></view>
-    <view class="cell" bindtap="goNotice"><text>公告</text><text class="arrow">›</text></view>
-    <view class="cell" bindtap="goProfile"><text>完善个人信息</text><text class="arrow">›</text></view>
+  <view class="card stats-card" hover-class="stats-card--hover" bind:tap="goReservations">
+    <view class="stats-grid">
+      <view class="stats-item">
+        <view class="stats-num">{{stats.total_count}}</view>
+        <view class="stats-label">累计预约</view>
+      </view>
+      <view class="stats-item">
+        <view class="stats-num">{{stats.month_count}}</view>
+        <view class="stats-label">本月预约</view>
+      </view>
+      <view class="stats-item">
+        <view class="stats-num">{{stats.no_show_count}}</view>
+        <view class="stats-label">爽约次数</view>
+      </view>
+    </view>
+    <view class="stats-more">查看我的预约 ›</view>
   </view>
 
-  <view class="card" wx:if="{{role >= 2}}">
-    <view class="cell" bindtap="goAdmin">
-      <text style="font-weight: 600;">管理后台</text>
-      <text class="arrow">›</text>
+  <t-notice-bar
+    wx:if="{{blackDays > 0}}"
+    visible="{{true}}"
+    theme="error"
+    t-class="notice-banner"
+    content="您已被限制预约，{{blackDays}} 天内不可预约场馆"
+  />
+
+  <view class="section-title">我的服务</view>
+  <view class="card menu-card">
+    <view class="menu-item" hover-class="menu-item--hover" bind:tap="goQrcode">
+      <line-icon custom-class="menu-icon" name="qrcode" size="40rpx" />
+      <text class="menu-name">我的动态二维码</text>
+      <line-icon name="arrow-right" size="30rpx" />
     </view>
+    <view class="menu-item" hover-class="menu-item--hover" bind:tap="goReservations">
+      <line-icon custom-class="menu-icon" name="calendar" size="40rpx" />
+      <text class="menu-name">我的预约</text>
+      <line-icon name="arrow-right" size="30rpx" />
+    </view>
+    <view class="menu-item" hover-class="menu-item--hover" bind:tap="goRecords">
+      <line-icon custom-class="menu-icon" name="records" size="40rpx" />
+      <text class="menu-name">近7天记录</text>
+      <line-icon name="arrow-right" size="30rpx" />
+    </view>
+    <view class="menu-item" hover-class="menu-item--hover" bind:tap="goNotice">
+      <line-icon custom-class="menu-icon" name="bell" size="40rpx" />
+      <text class="menu-name">公告</text>
+      <line-icon name="arrow-right" size="30rpx" />
+    </view>
+    <view class="menu-item" hover-class="menu-item--hover" bind:tap="goProfile">
+      <line-icon custom-class="menu-icon" name="edit" size="40rpx" />
+      <text class="menu-name">完善个人信息</text>
+      <line-icon name="arrow-right" size="30rpx" />
+    </view>
+    <view class="menu-item menu-item--last" hover-class="menu-item--hover" bind:tap="goAbout">
+      <line-icon custom-class="menu-icon" name="about" size="40rpx" />
+      <text class="menu-name">关于小程序</text>
+      <line-icon name="arrow-right" size="30rpx" />
+    </view>
+  </view>
+
+  <view class="admin-card" wx:if="{{role >= 2}}" hover-class="admin-card--hover" bind:tap="goAdmin">
+    <line-icon custom-class="admin-icon" name="tool" size="44rpx" />
+    <view class="admin-text">
+      <view class="admin-title">管理后台</view>
+      <view class="admin-sub">场馆运营与签到管理</view>
+    </view>
+    <line-icon custom-class="admin-arrow" name="arrow-right" size="32rpx" />
   </view>
 </view>

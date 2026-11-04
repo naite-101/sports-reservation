@@ -1,0 +1,32 @@
+/* 开发者信息：卡片分区 */
+
+.info-card {
+  padding: 28rpx;
+}
+
+/* 分区标题 */
+.info-label {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+/* 联系方式内容 */
+.info-content {
+  font-size: 30rpx;
+  color: #333;
+  word-break: break-all;
+}
+
+.info-content--empty {
+  color: #999;
+}
+
+/* 关于反馈说明文字 */
+.info-text {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.7;
+  word-break: break-all;
+}

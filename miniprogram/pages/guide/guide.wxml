@@ -1,28 +1,27 @@
 <view class="container">
   <view class="card">
-    <view class="card-title">场馆开放</view>
-    <view class="rule">羽毛球场：6 个场地（1~6 号）</view>
-    <view class="rule">乒乓球场：6 个场地（1~6 号）</view>
-    <view class="rule">健身房：20 个场地（1~20 号）</view>
-  </view>
-
-  <view class="card">
-    <view class="card-title">场次安排</view>
+    <view class="card-title card-title--icon">
+      <line-icon custom-class="title-icon" name="clock" size="32rpx" />场次安排
+    </view>
     <view class="rule">周一至周五：18:20~19:30、19:40~20:50</view>
     <view class="rule">周六至周日：13:00 起每 70 分钟一场，共 6 场</view>
   </view>
 
   <view class="card">
-    <view class="card-title">预约规则</view>
+    <view class="card-title card-title--icon">
+      <line-icon custom-class="title-icon" name="rules" size="32rpx" />预约规则
+    </view>
     <view class="rule">1. 每天 21:00 前预约当天场次，21:00 后开放次日场次，先到先得，免费预约。</view>
     <view class="rule">2. 同一学生同一时间窗（跨场馆）仅可预约 1 个场地。</view>
-    <view class="rule">3. 场次开始前 30 分钟可自主取消，取消后场地立即释放。</view>
+    <view class="rule rule-highlight">3. 场次开始前 30 分钟可自主取消，取消后场地立即释放。</view>
     <view class="rule">4. 到场请出示个人动态二维码（每 20 秒刷新），由管理员扫码签到。</view>
-    <view class="rule">5. 场次结束未签到视为爽约，系统自动拉黑 10 天。</view>
+    <view class="rule rule-highlight">5. 场次结束未签到视为爽约，系统自动拉黑 10 天。</view>
   </view>
 
-  <view class="card">
-    <view class="card-title">签到说明</view>
+  <view class="card checkin-card">
+    <view class="card-title card-title--icon">
+      <line-icon custom-class="title-icon" name="checkin" size="32rpx" />签到说明
+    </view>
     <view class="rule">签到窗口：场次开始前 15 分钟至场次结束。</view>
     <view class="rule">请携带本人二维码到场，可登记附属人员（非系统用户）。</view>
   </view>

@@ -1,1 +1,91 @@
-/* 使用全局样式 */
+/* 公告页：白色大卡片详情 + 列表 */
+
+.notice-detail {
+  padding: 36rpx 32rpx;
+}
+
+.notice-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.5;
+}
+
+.notice-meta {
+  margin-top: 14rpx;
+  margin-bottom: 28rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.notice-content {
+  font-size: 28rpx;
+  color: #555;
+  line-height: 1.9;
+  word-break: break-all;
+}
+
+/* 返回列表：文字按钮 */
+.notice-back {
+  margin-top: 40rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #3557F2;
+  padding: 16rpx 0;
+}
+
+.notice-back--hover {
+  color: #2347D6;
+}
+
+/* 公告列表项 */
+.notice-item {
+  padding: 28rpx;
+}
+
+.notice-item--hover {
+  background: #fafbfc;
+}
+
+.notice-item-row {
+  display: flex;
+  align-items: center;
+}
+
+.notice-read-tag {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  line-height: 1.5;
+  border-radius: 8rpx;
+  padding: 4rpx 12rpx;
+  margin-right: 16rpx;
+}
+
+.notice-read-tag--read {
+  background: #3557F2;
+  color: #ffffff;
+}
+
+.notice-read-tag--unread {
+  background: #e34d59;
+  color: #ffffff;
+}
+
+.notice-item-row .notice-item-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-item-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.5;
+}
+
+.notice-item-meta {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #999;
+}

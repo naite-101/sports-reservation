@@ -15,17 +15,21 @@ class BlacklistService extends BaseService {
     return await BlacklistModel.getAll({}, '*', { create_time: 'desc' });
   }
 
-  /** 手动拉黑（自定义时长） */
-  async add(operator, { student_openid, duration_days, reason }) {
-    const student = await UserModel.getOne(student_openid);
+  /**
+   * 手动拉黑（自定义时长）
+   * 支持用 openid / 学号 / 姓名 定位学生（姓名重复时报错，需改用学号或 openid）
+   */
+  async add(operator, { student_openid, student_no, name, duration_days, reason }) {
+    const student = await this.resolveStudent({ student_openid, student_no, name });
     if (!student) this.AppError('学生不存在', appCode.LOGIC);
+    const realOpenid = student._id;
     const days = Number(duration_days);
     if (!(days > 0)) this.AppError('拉黑时长必须大于 0 天', appCode.DATA);
 
     const now = timeUtil.now();
     const endTime = now + days * 86400000;
     await BlacklistModel.insert({
-      student_openid: student_openid,
+      student_openid: realOpenid,
       student_name: student.name || '',
       channel: 'manual',
       reason: reason || '手动拉黑',
@@ -42,7 +46,7 @@ class BlacklistService extends BaseService {
       create_time: now,
     });
 
-    await this.syncUserBlackUntil(student_openid);
+    await this.syncUserBlackUntil(realOpenid);
 
     await OperationLogModel.insert({
       module: 'blacklist',
@@ -50,13 +54,41 @@ class BlacklistService extends BaseService {
       operator_openid: operator._id,
       operator_name: operator.name || '',
       operator_role: operator.role,
-      target_openid: student_openid,
-      target_desc: student.name || student_openid,
+      target_openid: realOpenid,
+      target_desc: student.name || realOpenid,
       detail: { channel: 'manual', duration_days: days, reason: reason || '' },
       create_time: now,
     });
 
     return { blacked: true, end_time: endTime };
+  }
+
+  /**
+   * 按 openid -> 学号 -> 姓名 的顺序定位学生。
+   * openid 查不到时回退到学号/姓名，兼容前端用单个输入框传「学号或姓名或 openid」的场景。
+   */
+  async resolveStudent({ student_openid, student_no, name }) {
+    if (student_openid) {
+      const byOpenid = await UserModel.getOne(student_openid);
+      if (byOpenid) return byOpenid;
+    }
+
+    const sno = student_no || student_openid;
+    if (sno) {
+      const byNo = await UserModel.getOne({ student_no: sno });
+      if (byNo) return byNo;
+    }
+
+    const nm = name || student_openid;
+    if (nm) {
+      const byName = await UserModel.getAll({ name: nm });
+      if (byName.length > 1) {
+        this.AppError('姓名重复，请用学号或 openid', appCode.DATA);
+      }
+      if (byName.length === 1) return byName[0];
+    }
+
+    return null;
   }
 
   /** 解除拉黑（逻辑删除保留审计） */

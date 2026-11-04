@@ -6,6 +6,7 @@ Page({
     role: 0,
     roleName: '',
     blackDays: 0,
+    stats: { total_count: 0, month_count: 0, no_show_count: 0 },
   },
 
   onShow() {
@@ -23,6 +24,14 @@ Page({
       });
     } catch (e) {
       // ignore
+    }
+
+    // 预约统计（需登录，匿名用户静默跳过）
+    if (this.data.role >= 1) {
+      try {
+        const stats = await request.call('my/stats', {}, { silent: true });
+        this.setData({ stats: stats || { total_count: 0, month_count: 0, no_show_count: 0 } });
+      } catch (e) {}
     }
   },
 
@@ -48,6 +57,10 @@ Page({
 
   goNotice() {
     wx.navigateTo({ url: '/pages/notice/notice' });
+  },
+
+  goAbout() {
+    wx.navigateTo({ url: '/pages/about/about' });
   },
 
   goAdmin() {

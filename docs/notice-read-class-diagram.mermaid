@@ -1,0 +1,36 @@
+classDiagram
+    class NoticeReadModel {
+        +String CL = "notice_read"
+        +String openid
+        +String notice_id
+        +Number read_time
+    }
+    class NoticeModel {
+        +String CL = "notices"
+        +String title
+        +String content
+        +String status
+        +Number publish_time
+    }
+    class NoticeService {
+        +list(page, size, openId) object
+        +detail(id) object
+        +read(openId, noticeId) object
+        -attachReadState(list, openId) array
+    }
+    class NoticeController {
+        +list()
+        +detail()
+        +read()
+    }
+    class BaseModel
+    class BaseService
+    class BaseController
+
+    NoticeReadModel --|> BaseModel
+    NoticeModel --|> BaseModel
+    NoticeService --|> BaseService
+    NoticeController --|> BaseController
+    NoticeController --> NoticeService : 调用
+    NoticeService --> NoticeModel : 读
+    NoticeService --> NoticeReadModel : 读写

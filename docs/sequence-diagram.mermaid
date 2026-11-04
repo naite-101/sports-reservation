@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant UI as 首页 index
+    participant Req as utils/request
+    participant App as 云函数 application
+    participant V as VenueService
+    participant B as BannerService
+    participant N as NoticeService
+    UI->>Req: call('passport/login')
+    Req->>App: route=passport/login
+    App-->>UI: {role, black_days, ...}
+    UI->>Req: call('venue/list')
+    App->>V: list() → 透出 icon
+    V-->>UI: [{venue_type, icon, courts...}]
+    UI->>Req: call('banner/list')
+    App->>B: list() → orderBy sort asc
+    B-->>UI: [{fileID, sort}]
+    UI->>Req: call('notice/list', {page:1,size:5})
+    App->>N: list()
+    N-->>UI: {list:[{title...}]}
+    UI->>UI: 渲染 swiper + 跑马灯 + 场馆 icon
+
+sequenceDiagram
+    participant A as 超管 banner 管理页
+    participant Cloud as wx.cloud
+    participant App as 云函数 application
+    participant B as BannerService
+    A->>Cloud: wx.chooseMedia 选图
+    A->>Cloud: wx.cloud.uploadFile → fileID
+    A->>App: call('banner/add', {fileID})
+    App->>B: add(operator, fileID)
+    B->>B: sort=max+1 → insert → 写操作日志
+    B-->>A: {added:true, _id, fileID, sort}
+    A->>A: 刷新列表（banner/list）
+
+sequenceDiagram
+    participant M as 我的页 mine
+    participant App as 云函数 application
+    participant C as MyController
+    participant R as ReservationRecordModel
+    M->>App: call('my/stats')
+    App->>C: stats()
+    C->>R: count({student_openid})
+    C->>R: count({student_openid, status:'expired'})
+    C->>R: count({student_openid, create_time:['>=', 月初]})
+    C-->>M: {total_count, month_count, no_show_count}

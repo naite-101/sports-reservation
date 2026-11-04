@@ -10,21 +10,20 @@ module.exports = {
   JOB_SECRET: 'gymreserve-job-secret-2026',
 
   // 角色常量（数值越大权限越高）
+  // 说明：老师/主席已合并为「人事管理员」(HR_ADMIN=4)，不再区分 TEACHER/CHAIRMAN。
   ROLE: {
     ANONYMOUS: 0,
     STUDENT: 1,
     ADMIN: 2,
     SUPER_ADMIN: 3,
-    TEACHER: 4,
-    CHAIRMAN: 5,
+    HR_ADMIN: 4,
   },
   ROLE_LEVEL: {
     0: '匿名',
     1: '学生',
     2: '普通管理员',
     3: '超级管理员',
-    4: '老师',
-    5: '现任主席',
+    4: '人事管理员',
   },
 
   // 集合名
@@ -36,17 +35,19 @@ module.exports = {
     reservation_records: 'reservation_records',
     blacklist: 'blacklist',
     notices: 'notices',
+    notice_read: 'notice_read',
     checkin_records: 'checkin_records',
     operation_logs: 'operation_logs',
     configs: 'configs',
     qrcode_tokens: 'qrcode_tokens',
+    banners: 'banners',
   },
 
   // 场馆类型与场地数量
   VENUE_TYPES: {
-    badminton: { name: '羽毛球场', count: 6 },
-    pingpong: { name: '乒乓球场', count: 6 },
-    gym: { name: '健身房', count: 20 },
+    badminton: { name: '羽毛球场', count: 6, icon: '🏸' },
+    pingpong: { name: '乒乓球场', count: 6, icon: '🏓' },
+    gym: { name: '健身房', count: 20, icon: '🏋️' },
   },
 
   // 默认开放时间（前一天 21:00 开放次日）

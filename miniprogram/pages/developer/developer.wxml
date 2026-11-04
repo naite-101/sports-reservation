@@ -1,0 +1,19 @@
+<view class="container">
+  <!-- 微信联系方式 -->
+  <view class="card info-card">
+    <view class="info-label">微信联系方式</view>
+    <view class="info-content {{wechat ? '' : 'info-content--empty'}}">{{wechat || '暂未填写'}}</view>
+  </view>
+
+  <!-- QQ 联系方式 -->
+  <view class="card info-card">
+    <view class="info-label">QQ 联系方式</view>
+    <view class="info-content {{qq ? '' : 'info-content--empty'}}">{{qq || '暂未填写'}}</view>
+  </view>
+
+  <!-- 关于反馈 -->
+  <view class="card info-card">
+    <view class="info-label">关于反馈</view>
+    <view class="info-text">{{aboutFeedback}}</view>
+  </view>
+</view>

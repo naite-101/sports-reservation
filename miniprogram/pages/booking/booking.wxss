@@ -1,20 +1,20 @@
+/* 选择场地：自定义标签 + 三态场地格 + 深绿提交按钮 */
+
+/* 卡片标题内图标留白 */
+.card-title--icon {
+  display: flex;
+  align-items: center;
+}
+
+.title-icon {
+  margin-right: 10rpx;
+}
+
+/* 场馆 / 场次切换标签 */
 .type-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 16rpx;
-}
-
-.type-tab {
-  flex: 1;
-  text-align: center;
-  padding: 16rpx 0;
-  background: #f0f0f0;
-  border-radius: 12rpx;
-  font-size: 28rpx;
-}
-
-.type-tab.active {
-  background: #1f7a4d;
-  color: #fff;
 }
 
 .slot-tabs {
@@ -23,49 +23,124 @@
   gap: 16rpx;
 }
 
-.slot-tab {
-  padding: 14rpx 24rpx;
-  background: #f0f0f0;
-  border-radius: 12rpx;
+/* 未选中：浅蓝底 + 蓝色文字；选中：深蓝卡片 + 白字 + 右上角对勾（与「选择场地」一致） */
+.chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 150rpx;
+  background: #eaf6fd;
+  color: #3557F2;
+  border: 2rpx solid #eaf6fd;
+  border-radius: 16rpx;
+  padding: 22rpx 30rpx;
   font-size: 26rpx;
+  line-height: 1;
+  box-sizing: border-box;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.slot-tab.active {
-  background: #1f7a4d;
-  color: #fff;
+.chip--active {
+  background: #3557F2;
+  color: #ffffff;
+  border-color: #3557F2;
+  font-weight: 600;
+}
+
+.chip-check {
+  position: absolute;
+  top: 6rpx;
+  right: 6rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .court-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  gap: 18rpx;
 }
 
+/* 场地格子：三态配色清晰区分 */
 .court {
-  width: 21%;
-  background: #e7f6ee;
-  color: #1f7a4d;
-  border-radius: 12rpx;
-  padding: 20rpx 0;
+  position: relative;
+  width: 21.5%;
+  background: #eaf6fd;
+  color: #3557F2;
+  border-radius: 14rpx;
+  padding: 22rpx 0;
   text-align: center;
   font-size: 26rpx;
+  box-sizing: border-box;
+  transition: transform 0.12s ease;
 }
 
+/* 可预约：浅绿底 */
+.court.available {
+  background: #eaf6fd;
+  color: #3557F2;
+}
+
+/* 已约满：浅灰底灰字 */
 .court.booked {
-  background: #f0f0f0;
-  color: #999;
+  background: #f0f1f2;
+  color: #9aa0a6;
 }
 
+/* 闭馆：更深灰 */
 .court.closed {
-  background: #fdecea;
-  color: #d9534f;
+  background: #e3e5e8;
+  color: #8b8f94;
 }
 
+/* 选中态：加深底色 + 白色对勾 */
 .court.selected {
-  border: 2rpx solid #1f7a4d;
+  background: #3557F2;
+  color: #fff;
+  font-weight: 600;
+  transform: translateY(-2rpx);
+}
+
+.court-no {
+  line-height: 1;
 }
 
 .court-status {
   font-size: 20rpx;
-  margin-top: 6rpx;
+  margin-top: 10rpx;
+}
+
+.court-check {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+}
+
+/* 提交预约按钮：可预约深绿，否则柔和灰（通过 t-class 覆盖 TDesign 默认样式） */
+.submit-btn--active {
+  border-radius: 16rpx !important;
+  height: 88rpx !important;
+  font-weight: 600 !important;
+  background-color: #3557F2 !important;
+  border-color: #3557F2 !important;
+  color: #fff !important;
+}
+
+.submit-btn--disabled {
+  border-radius: 16rpx !important;
+  height: 88rpx !important;
+  font-weight: 600 !important;
+  background-color: #d8dadc !important;
+  border-color: #d8dadc !important;
+  color: #fff !important;
+}
+
+/* 底部预约提示 */
+.booking-tip {
+  margin-top: 20rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #aaa;
 }

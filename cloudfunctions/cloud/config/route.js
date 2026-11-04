@@ -19,6 +19,7 @@ module.exports = {
   'my/reservations': { controller: 'my_controller', action: 'reservations', role: 1 },
   'my/records': { controller: 'my_controller', action: 'records', role: 1 },
   'my/profile': { controller: 'my_controller', action: 'profile', role: 1 },
+  'my/stats': { controller: 'my_controller', action: 'stats', role: 1 },
   'qrcode/generate': { controller: 'qrcode_controller', action: 'generate', role: 1 },
   'qrcode/valid_booking': { controller: 'qrcode_controller', action: 'validBooking', role: 1 },
 
@@ -26,6 +27,13 @@ module.exports = {
   'notice/latest': { controller: 'notice_controller', action: 'latest', role: 0 },
   'notice/list': { controller: 'notice_controller', action: 'list', role: 0 },
   'notice/detail': { controller: 'notice_controller', action: 'detail', role: 0 },
+  'notice/read': { controller: 'notice_controller', action: 'read', role: 1 },
+
+  // ---------- 首页轮播 banner（匿名可看，超管可管理） ----------
+  'banner/list': { controller: 'banner_controller', action: 'list', role: 0 },
+  'banner/add': { controller: 'banner_controller', action: 'add', role: 3 },
+  'banner/delete': { controller: 'banner_controller', action: 'remove', role: 3 },
+  'banner/sort': { controller: 'banner_controller', action: 'sort', role: 3 },
 
   // ---------- 公告管理（架构路由表未列，T04 要求，补充为 admin/notice_*） ----------
   'admin/notice_list': { controller: 'notice_controller', action: 'adminList', role: 2 },
@@ -48,14 +56,14 @@ module.exports = {
   'venue/close_list': { controller: 'venue_controller', action: 'closeList', role: 3 },
   'log/list': { controller: 'log_controller', action: 'list', role: 3 },
 
-  // ---------- 人事（老师/主席专属；任命类接口超管也可进入） ----------
+  // ---------- 人事（人事管理员专属；任命类接口超管也可进入） ----------
   'hr/admin_list': { controller: 'hr_controller', action: 'adminList', role: 3 },
   'hr/admin_add': { controller: 'hr_controller', action: 'adminAdd', role: 3 },
   'hr/admin_remove': { controller: 'hr_controller', action: 'adminRemove', role: 4 },
   'hr/admin_assign': { controller: 'hr_controller', action: 'adminAssign', role: 3 },
-  'hr/student_list': { controller: 'hr_controller', action: 'studentList', role: 4 },
-  'hr/student_detail': { controller: 'hr_controller', action: 'studentDetail', role: 4 },
-  'hr/student_edit': { controller: 'hr_controller', action: 'studentEdit', role: 4 },
+  'hr/student_list': { controller: 'hr_controller', action: 'studentList', role: 3 },
+  'hr/student_detail': { controller: 'hr_controller', action: 'studentDetail', role: 3 },
+  'hr/student_edit': { controller: 'hr_controller', action: 'studentEdit', role: 3 },
 
   // ---------- 配置 / 消息 ----------
   'config/get': { controller: 'config_controller', action: 'get', role: 0 },

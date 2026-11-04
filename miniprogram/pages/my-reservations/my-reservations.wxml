@@ -1,13 +1,30 @@
 <view class="container">
-  <view class="card" wx:for="{{list}}" wx:key="res_id">
-    <view class="space-between">
-      <text style="font-weight: 600;">{{item.venue_type_name}} {{item.court_no}}号</text>
-      <text class="tag {{item.status === 'pending' ? 'green' : (item.status === 'checked_in' ? 'green' : 'gray')}}">{{item.statusText}}</text>
+  <view class="order-card" wx:for="{{list}}" wx:key="res_id">
+    <view class="order-head">
+      <view class="order-title">
+        <line-icon custom-class="order-icon" name="venue" size="36rpx" />
+        <text class="order-name">{{item.venue_type_name}} {{item.court_no}}号</text>
+      </view>
+      <view class="status-badge status--{{item.status}}">{{item.statusText}}</view>
     </view>
-    <view class="text-muted" style="margin-top: 8rpx;">{{item.date}} {{item.slot_key}}</view>
-    <view class="row" style="justify-content: flex-end; margin-top: 16rpx;" wx:if="{{item.cancelable}}">
-      <view class="btn plain danger" style="padding: 8rpx 24rpx;" data-id="{{item.res_id}}" bindtap="cancel">取消预约</view>
+
+    <view class="order-meta">
+      <view class="meta-row">
+        <text class="meta-label">日期</text>
+        <text class="meta-value">{{item.date}}</text>
+      </view>
+      <view class="meta-row">
+        <text class="meta-label">场次</text>
+        <text class="meta-value">{{item.slot_key}}</text>
+      </view>
+    </view>
+
+    <view class="order-foot" wx:if="{{item.cancelable}}">
+      <t-button size="small" theme="danger" variant="outline" data-id="{{item.res_id}}" bind:tap="cancel">取消预约</t-button>
     </view>
   </view>
-  <view class="empty" wx:if="{{!list.length}}">暂无预约记录</view>
+
+  <view class="res-empty" wx:if="{{!list.length}}">
+    <t-empty description="暂无预约记录" />
+  </view>
 </view>

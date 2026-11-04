@@ -1,18 +1,23 @@
 <view class="container">
   <block wx:if="{{detail}}">
-    <view class="card">
-      <view class="card-title">{{detail.title}}</view>
-      <view class="text-muted" style="margin-bottom: 20rpx;">{{detail.timeText}} · {{detail.author_name}}</view>
-      <view style="font-size: 28rpx; line-height: 1.7; color: #555;">{{detail.content}}</view>
-      <view class="btn plain" style="margin-top: 24rpx;" bindtap="onBack">返回列表</view>
+    <view class="card notice-detail">
+      <view class="notice-title">{{detail.title}}</view>
+      <view class="notice-meta">{{detail.timeText}} · {{detail.author_name}}</view>
+      <view class="notice-content">{{detail.content}}</view>
+      <view class="notice-back" hover-class="notice-back--hover" bind:tap="onBack">返回列表</view>
     </view>
   </block>
 
   <block wx:else>
-    <view class="card" wx:for="{{list}}" wx:key="_id" data-id="{{item._id}}" bindtap="onTapNotice">
-      <view style="font-weight: 600; font-size: 30rpx;">{{item.title}}</view>
-      <view class="text-muted" style="margin-top: 8rpx;">{{item.timeText}}</view>
+    <view class="card notice-item" wx:for="{{list}}" wx:key="_id" data-id="{{item._id}}" bind:tap="onTapNotice" hover-class="notice-item--hover">
+      <view class="notice-item-row">
+        <view class="notice-read-tag {{item.is_read ? 'notice-read-tag--read' : 'notice-read-tag--unread'}}">
+          {{item.is_read ? '已读' : '未读'}}
+        </view>
+        <view class="notice-item-title">{{item.title}}</view>
+      </view>
+      <view class="notice-item-meta">{{item.timeText}}</view>
     </view>
-    <view class="empty" wx:if="{{!list.length}}">暂无公告</view>
+    <t-empty wx:if="{{!list.length}}" description="暂无公告" />
   </block>
 </view>

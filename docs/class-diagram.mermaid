@@ -1,0 +1,39 @@
+classDiagram
+    class BannerModel {
+        +String CL = "banners"
+        +insert(data) string
+        +edit(where, data) number
+        +del(where) number
+        +count(where) number
+        +getOne(where, fields, orderBy) object
+        +getAll(where, fields, orderBy, size) array
+    }
+    class BannerService {
+        +list() array
+        +add(operator, fileID) object
+        +remove(operator, id) object
+        +sort(operator, ids) object
+    }
+    class BannerController {
+        +list()
+        +add()
+        +remove()
+        +sort()
+    }
+    class VenueService {
+        +list() array
+    }
+    class MyController {
+        +stats() object
+    }
+    class ReservationRecordModel {
+        +String CL = "reservation_records"
+        +count(where) number
+    }
+    class ConfigModel {
+        +String CL = "configs"
+    }
+    BannerController --> BannerService : 调用
+    BannerService --> BannerModel : 读写
+    MyController --> ReservationRecordModel : count 统计
+    VenueService --> ConfigModel : 读 open_time

@@ -1,18 +1,36 @@
 <view class="container">
-  <view class="card">
-    <view class="card-title">{{roleName}} · 管理后台</view>
+  <view class="card admin-header">
+    <view class="admin-header-title">超级管理员工作台</view>
+    <view class="admin-header-sub">管理场馆签到、公告、场地与人员等运营事务</view>
   </view>
 
-  <view class="card" wx:if="{{role >= 2}}">
-    <view class="menu" data-url="/pages/admin/checkin/checkin" bindtap="nav">扫码签到</view>
-    <view class="menu" data-url="/pages/admin/blacklist/blacklist" bindtap="nav">黑名单管理</view>
-    <view class="menu" data-url="/pages/admin/notice-mgr/notice-mgr" bindtap="nav">公告管理</view>
-    <view class="menu" data-url="/pages/admin/checkin-records/checkin-records" bindtap="nav">签到记录</view>
-  </view>
+  <t-cell-group theme="card" title="签到运营管理" t-class-title="admin-group-title" wx:if="{{role >= 2}}">
+    <t-cell title="扫码签到" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/checkin/checkin" bind:click="nav">
+      <line-icon name="scan" size="40rpx" slot="left-icon" />
+    </t-cell>
+    <t-cell title="黑名单管理" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/blacklist/blacklist" bind:click="nav">
+      <line-icon name="ban" size="40rpx" slot="left-icon" />
+    </t-cell>
+    <t-cell title="公告管理" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/notice-mgr/notice-mgr" bind:click="nav">
+      <line-icon name="bell" size="40rpx" slot="left-icon" />
+    </t-cell>
+    <t-cell title="签到记录" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/checkin-records/checkin-records" bind:click="nav">
+      <line-icon name="records" size="40rpx" slot="left-icon" />
+    </t-cell>
+  </t-cell-group>
 
-  <view class="card" wx:if="{{role >= 3}}">
-    <view class="menu" data-url="/pages/admin/venue-close/venue-close" bindtap="nav">场地闭馆</view>
-    <view class="menu" data-url="/pages/admin/logs/logs" bindtap="nav">系统日志</view>
-    <view class="menu" data-url="/pages/admin/hr/hr" bindtap="nav">人事管理</view>
-  </view>
+  <t-cell-group theme="card" title="系统后台管理" t-class-title="admin-group-title" wx:if="{{role >= 3}}">
+    <t-cell title="场地闭馆" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/venue-close/venue-close" bind:click="nav">
+      <line-icon name="venue" size="40rpx" slot="left-icon" />
+    </t-cell>
+    <t-cell title="系统日志" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/logs/logs" bind:click="nav">
+      <line-icon name="log" size="40rpx" slot="left-icon" />
+    </t-cell>
+    <t-cell title="人事管理" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/hr/hr" bind:click="nav">
+      <line-icon name="user" size="40rpx" slot="left-icon" />
+    </t-cell>
+    <t-cell title="轮播图管理" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/banner/banner" bind:click="nav">
+      <line-icon name="image" size="40rpx" slot="left-icon" />
+    </t-cell>
+  </t-cell-group>
 </view>

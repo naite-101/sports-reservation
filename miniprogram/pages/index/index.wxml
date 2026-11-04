@@ -1,37 +1,130 @@
 <view class="container">
-  <view class="banner" wx:if="{{blackDays > 0}}">您已被限制预约，{{blackDays}} 天内不可预约场馆</view>
-
-  <view class="card" wx:if="{{role === 0}}">
-    <view class="card-title">完善信息</view>
-    <view class="text-muted">完善个人信息后可预约场馆</view>
-    <view class="btn" style="margin-top: 20rpx;" bindtap="goProfile">去完善信息</view>
+  <view class="banner-wrap" wx:if="{{banners.length > 0}}">
+    <swiper
+      class="banner-swiper"
+      indicator-dots="{{true}}"
+      indicator-color="rgba(255,255,255,0.5)"
+      indicator-active-color="#ffffff"
+      autoplay="{{true}}"
+      circular="{{true}}"
+      interval="4000"
+      duration="500"
+    >
+      <swiper-item wx:for="{{banners}}" wx:key="_id">
+        <image class="banner-img" src="{{item.fileID}}" mode="{{item.mode || 'aspectFit'}}" data-index="{{index}}" bind:tap="onTapBanner" />
+      </swiper-item>
+    </swiper>
+  </view>
+  <view class="banner-wrap" wx:else>
+    <swiper
+      class="banner-swiper"
+      indicator-dots="{{true}}"
+      indicator-color="rgba(255,255,255,0.5)"
+      indicator-active-color="#ffffff"
+      autoplay="{{true}}"
+      circular="{{true}}"
+      interval="4000"
+      duration="500"
+    >
+      <swiper-item wx:for="{{localBanners}}" wx:key="id">
+        <image class="banner-img" src="{{item.src}}" mode="{{item.mode}}" data-index="{{index}}" bind:tap="onTapBanner" />
+      </swiper-item>
+    </swiper>
   </view>
 
+  <t-notice-bar
+    wx:if="{{blackDays > 0}}"
+    visible="{{true}}"
+    theme="error"
+    t-class="notice-banner"
+    content="您已被限制预约，{{blackDays}} 天内不可预约场馆"
+  />
+
+  <view class="card profile-tip-card" wx:if="{{role === 0}}">
+    <view class="card-title card-title--icon">
+      <line-icon custom-class="title-icon" name="edit" size="30rpx" />完善信息
+    </view>
+    <view class="text-muted">完善个人信息后可预约场馆</view>
+    <t-button theme="primary" block="{{true}}" style="margin-top: 20rpx;" bind:tap="goProfile">去完善信息</t-button>
+  </view>
+
+  <!-- 首页公告区：最近 3 条，含已读/未读标签 -->
+  <view class="card notice-section" wx:if="{{noticeList.length > 0}}">
+    <view class="notice-section-head">
+      <view class="notice-section-title">
+        <line-icon custom-class="title-icon" name="bell" size="30rpx" />公告
+      </view>
+      <view class="notice-section-more" hover-class="notice-section-more--hover" bind:tap="goNotice">更多>></view>
+    </view>
+    <view
+      class="notice-section-item {{index > 0 ? 'notice-section-item--divider' : ''}}"
+      wx:for="{{noticeList}}"
+      wx:key="_id"
+      hover-class="notice-section-item--hover"
+      data-id="{{item._id}}"
+      bind:tap="onTapNotice"
+    >
+      <view class="notice-read-tag {{item.is_read ? 'notice-read-tag--read' : 'notice-read-tag--unread'}}">
+        {{item.is_read ? '已读' : '未读'}}
+      </view>
+      <view class="notice-section-item-title">{{item.title}}</view>
+      <view class="notice-section-item-date">{{item.dateText}}</view>
+    </view>
+  </view>
+
+  <view class="section-title section-title--split">
+    <view class="section-title-left">
+      <line-icon custom-class="title-icon" name="venue" size="32rpx" />选择场馆
+    </view>
+    <view class="reserve-brief" wx:if="{{myReservation}}">{{myReservation.venue_type_name}} · {{myReservation.court_no}}号 · {{myReservation.slotText}}</view>
+  </view>
   <view class="venue-grid">
-    <view class="venue-card" wx:for="{{venues}}" wx:key="venue_type" data-type="{{item.venue_type}}" bindtap="onTapVenue">
+    <view
+      class="venue-card"
+      wx:for="{{venues}}"
+      wx:key="venue_type"
+      hover-class="venue-card--hover"
+      data-type="{{item.venue_type}}"
+      bind:tap="onTapVenue"
+    >
+      <view class="venue-icon">
+        <line-icon wx:if="{{item.venue_type === 'badminton'}}" name="badminton" size="64rpx" />
+        <line-icon wx:elif="{{item.venue_type === 'pingpong'}}" name="pingpong" size="64rpx" />
+        <line-icon wx:elif="{{item.venue_type === 'gym'}}" name="gym" size="64rpx" />
+        <line-icon wx:else name="venue" size="64rpx" />
+      </view>
       <view class="venue-name">{{item.venue_type_name}}</view>
       <view class="venue-count">{{item.count}} 个场地</view>
     </view>
-  </view>
 
-  <view class="card">
-    <view class="quick-row" bindtap="goQrcode">
-      <text>我的动态二维码</text>
-      <text class="arrow">›</text>
-    </view>
-    <view class="quick-row" bindtap="goReservations">
-      <text>我的预约</text>
-      <text class="arrow">›</text>
-    </view>
-    <view class="quick-row" bindtap="goNotice">
-      <text>公告</text>
-      <text class="arrow">›</text>
+    <!-- 第 4 个卡片：我的二维码（点击跳转二维码页） -->
+    <view class="venue-card" hover-class="venue-card--hover" bind:tap="goQrcode">
+      <view class="venue-icon">
+        <line-icon name="qrcode" size="64rpx" />
+      </view>
+      <view class="venue-name">我的二维码</view>
+      <view class="venue-count">扫码签到</view>
     </view>
   </view>
 
-  <view class="text-muted" style="text-align:center; padding: 20rpx;">
-    每天 21:00 开放次日场次预约
+  <view class="open-tip">
+    <text>每天 21:00 开放次日场次预约</text>
   </view>
+
+  <!-- 底部联合出品：两个社团 logo -->
+  <view class="co-brand">
+    <view class="co-brand-logos">
+      <view class="co-brand-item">
+        <image class="co-brand-img" src="/images/sports-logo.jpg" mode="aspectFit" />
+        <text class="co-brand-name">中德体育中心服务社</text>
+      </view>
+      <view class="co-brand-item">
+        <image class="co-brand-img" src="/images/os-harmony-logo.png" mode="aspectFit" />
+        <text class="co-brand-name">开源鸿蒙社</text>
+      </view>
+    </view>
+    <view class="co-brand-tip">联合出品</view>
+  </view>
+
+  <notice-modal show="{{showNotice}}" notice="{{notice}}" bind:close="onCloseNotice" />
 </view>
-
-<notice-modal show="{{showNotice}}" notice="{{notice}}" bind:close="onCloseNotice" />

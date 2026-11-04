@@ -1,9 +1,28 @@
-.menu {
-  padding: 28rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
-  font-size: 30rpx;
+/* 管理后台工作台：顶部说明卡 + 菜单分组 */
+
+.admin-header {
+  padding: 32rpx 28rpx;
 }
 
-.menu:last-child {
-  border-bottom: none;
+.admin-header-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.admin-header-sub {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.6;
+}
+
+/* 菜单分组标题：去掉灰底，改为更轻的标题样式 */
+.admin-group-title {
+  background: transparent;
+  color: #666;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 64rpx;
+  padding-left: 8rpx;
 }

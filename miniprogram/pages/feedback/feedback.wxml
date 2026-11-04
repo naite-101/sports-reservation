@@ -1,0 +1,50 @@
+<view class="container">
+  <!-- 反馈内容 -->
+  <view class="card">
+    <view class="form-label">反馈内容</view>
+    <textarea
+      class="feedback-textarea"
+      maxlength="{{maxLength}}"
+      value="{{content}}"
+      placeholder="请描述您遇到的问题或建议（200字以内）"
+      placeholder-class="placeholder"
+      bindinput="onInput"
+    />
+    <view class="char-count">{{content.length}}/{{maxLength}}</view>
+  </view>
+
+  <!-- 反馈类型（单选标签） -->
+  <view class="card">
+    <view class="form-label">反馈类型</view>
+    <view class="type-list">
+      <view
+        wx:for="{{types}}"
+        wx:key="*this"
+        class="type-item {{typeIndex === index ? 'type-item--active' : ''}}"
+        data-index="{{index}}"
+        bind:tap="selectType"
+      >{{item}}</view>
+    </view>
+  </view>
+
+  <!-- 上传图片（选填，本地预览） -->
+  <view class="card">
+    <view class="form-label">上传图片（选填）</view>
+    <view class="upload-tip">若反馈小程序 bug，请附加一张能指明问题的图片</view>
+    <view class="upload-grid">
+      <view wx:for="{{images}}" wx:key="*this" class="image-item">
+        <image class="thumb" src="{{item}}" mode="aspectFill" />
+        <view class="remove" data-index="{{index}}" catch:tap="removeImage">×</view>
+      </view>
+      <view wx:if="{{images.length < 3}}" class="add-item" hover-class="add-item--hover" bind:tap="chooseImage">
+        <line-icon name="image" size="52rpx" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 提交按钮（橙色） -->
+  <view class="submit-btn" hover-class="submit-btn--hover" bind:tap="submit">提交反馈</view>
+
+  <!-- 底部说明 -->
+  <view class="foot-tip">欢迎提交建议或问题反馈，我们收到反馈后会第一时间参阅。</view>
+</view>

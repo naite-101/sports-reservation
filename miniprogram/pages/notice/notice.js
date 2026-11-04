@@ -39,6 +39,15 @@ Page({
         detail: Object.assign({}, detail, { timeText: util.timestamp2Time(detail.publish_time, 'Y-M-D h:m') }),
       });
       wx.setNavigationBarTitle({ title: detail.title || '公告详情' });
+      // 标记已读：静默调用，失败不影响详情展示；成功后同步列表该条 is_read
+      request.call('notice/read', { notice_id: id }, { silent: true })
+        .then(() => {
+          const list = this.data.list.map((it) =>
+            it._id === id ? Object.assign({}, it, { is_read: true }) : it
+          );
+          this.setData({ list: list });
+        })
+        .catch(() => {});
     } catch (e) {
       // ignore
     }
@@ -58,5 +67,7 @@ Page({
   onBack() {
     this.setData({ detail: null });
     wx.setNavigationBarTitle({ title: '公告' });
+    // 从首页直达详情时未加载过列表，返回时补拉，避免空列表
+    if (!this.data.list.length) this.loadList();
   },
 });

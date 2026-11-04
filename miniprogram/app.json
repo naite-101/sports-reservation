@@ -17,18 +17,22 @@
     "pages/admin/venue-close/venue-close",
     "pages/admin/logs/logs",
     "pages/admin/hr/hr",
-    "pages/stress/stress"
+    "pages/admin/banner/banner",
+    "pages/stress/stress",
+    "pages/about/about",
+    "pages/feedback/feedback",
+    "pages/developer/developer"
   ],
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#1f7a4d",
+    "navigationBarBackgroundColor": "#3557F2",
     "navigationBarTitleText": "体育馆预约",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#f5f6f7"
+    "backgroundColor": "#f6f7f8"
   },
   "tabBar": {
     "color": "#999999",
-    "selectedColor": "#1f7a4d",
+    "selectedColor": "#3557F2",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
@@ -47,8 +51,17 @@
     ]
   },
   "usingComponents": {
-    "notice-modal": "/components/notice-modal/notice-modal"
+    "notice-modal": "/components/notice-modal/notice-modal",
+    "line-icon": "/components/line-icon/line-icon",
+    "t-button": "tdesign-miniprogram/button/button",
+    "t-tag": "tdesign-miniprogram/tag/tag",
+    "t-cell": "tdesign-miniprogram/cell/cell",
+    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
+    "t-empty": "tdesign-miniprogram/empty/empty",
+    "t-avatar": "tdesign-miniprogram/avatar/avatar",
+    "t-notice-bar": "tdesign-miniprogram/notice-bar/notice-bar"
   },
   "sitemapLocation": "sitemap.json",
-  "style": "v2"
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
 }

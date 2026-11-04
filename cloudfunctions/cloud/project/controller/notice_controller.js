@@ -14,12 +14,17 @@ class NoticeController extends BaseController {
       page: 'int|default=1',
       size: 'int|default=20',
     });
-    return await new NoticeService().list(input.page, input.size);
+    return await new NoticeService().list(input.page, input.size, this._openId);
   }
 
   async detail() {
     const input = this.validateData({ id: 'must|string|name=公告ID' });
     return await new NoticeService().detail(input.id);
+  }
+
+  async read() {
+    const input = this.validateData({ notice_id: 'must|string|name=公告ID' });
+    return await new NoticeService().read(this._openId, input.notice_id);
   }
 
   async adminList() {

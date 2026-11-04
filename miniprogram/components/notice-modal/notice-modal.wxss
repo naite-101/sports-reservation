@@ -14,7 +14,7 @@
 .modal {
   width: 80%;
   background: #fff;
-  border-radius: 16rpx;
+  border-radius: 32rpx;
   padding: 32rpx;
 }
 
@@ -29,7 +29,7 @@
   max-height: 50vh;
   font-size: 28rpx;
   color: #555;
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 24rpx;
 }
 
@@ -47,6 +47,6 @@
 }
 
 .modal-btn.primary {
-  background: #1f7a4d;
+  background: #3557F2;
   color: #fff;
 }

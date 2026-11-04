@@ -18,12 +18,17 @@ Page({
         }
         wx.showLoading({ title: '校验中...' });
         try {
-          const data = await request.call('admin/scan', { token: token });
+          const data = await request.call('admin/scan', { token: token }, { silent: true });
           wx.hideLoading();
           this.setData({ scanResult: data, companions: [{ name: '', phone: '' }] });
         } catch (e) {
           wx.hideLoading();
           this.setData({ scanResult: null });
+          wx.showToast({
+            title: (e && e.msg) || (e && e.errMsg) || '扫描失败，请重试',
+            icon: 'none',
+            duration: 2500,
+          });
         }
       },
       fail: () => {},

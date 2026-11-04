@@ -1,17 +1,24 @@
 <view class="container">
   <view class="card">
     <view class="type-tabs">
-      <view class="type-tab {{activeModule === item.key ? 'active' : ''}}" wx:for="{{modules}}" wx:key="key" data-key="{{item.key}}" bindtap="onTapModule">{{item.name}}</view>
+      <t-tag
+        theme="{{activeModule === item.key ? 'primary' : 'default'}}"
+        variant="{{activeModule === item.key ? 'dark' : 'light'}}"
+        wx:for="{{modules}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bind:click="onTapModule"
+      >{{item.name}}</t-tag>
     </view>
   </view>
 
   <view class="card" wx:for="{{list}}" wx:key="_id">
     <view class="space-between">
       <text style="font-weight: 600;">{{item.actionText}}</text>
-      <text class="tag green">{{item.operator_name}}</text>
+      <t-tag size="small" theme="success" variant="light">{{item.operator_name}}</t-tag>
     </view>
     <view class="text-muted" style="margin-top: 8rpx;">对象：{{item.target_desc}}</view>
     <view class="text-muted">时间：{{item.timeText}}</view>
   </view>
-  <view class="empty" wx:if="{{!list.length}}">暂无日志</view>
+  <t-empty wx:if="{{!list.length}}" description="暂无日志" />
 </view>

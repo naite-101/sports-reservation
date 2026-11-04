@@ -1,5 +1,5 @@
 <view class="container">
-  <view class="btn" bindtap="scan">扫学生二维码</view>
+  <t-button theme="primary" block="{{true}}" bind:tap="scan">扫学生二维码</t-button>
 
   <view class="card" wx:if="{{scanResult}}">
     <view class="card-title">学生信息</view>
@@ -18,10 +18,10 @@
       <input class="form-input" style="flex:1; margin-left: 12rpx;" placeholder="手机号（选填）" value="{{item.phone}}" data-index="{{index}}" data-field="phone" bindinput="onCompanionInput" />
       <view class="rm" data-index="{{index}}" bindtap="removeCompanion">删</view>
     </view>
-    <view class="btn plain" style="margin-top: 12rpx;" bindtap="addCompanion">+ 添加附属人员</view>
+    <t-button theme="primary" variant="outline" block="{{true}}" style="margin-top: 12rpx;" bind:tap="addCompanion">+ 添加附属人员</t-button>
 
-    <view class="btn {{checking ? 'disabled' : ''}}" style="margin-top: 24rpx;" bindtap="confirm">确认签到</view>
+    <t-button theme="primary" block="{{true}}" style="margin-top: 24rpx;" disabled="{{checking}}" bind:tap="confirm">确认签到</t-button>
   </view>
 
-  <view class="empty" wx:if="{{!scanResult}}">请扫描学生动态二维码</view>
+  <t-empty wx:if="{{!scanResult}}" description="请扫描学生动态二维码" />
 </view>

@@ -11,17 +11,18 @@ const config = require('../../config/config.js');
 
 class JobService extends BaseService {
   /**
-   * 爽约扫描：最近2天 status=pending 且场次已结束 -> 原子更新 expired -> 自动拉黑10天
+   * 爽约扫描：所有「日期 <= 今天」且 status=pending 且场次已结束 -> 原子更新 expired -> 自动拉黑10天
    * 并顺带执行黑名单到期自动解除（status=active 且 end_time<=now -> released）
    * 幂等：以 update pending->expired / active->released 成功为标记
+   * 说明：早先限定「最近2天」，导致更早的过期预约永远无法翻转为 expired（爽约次数恒为 0），
+   *       现改为扫描今天及之前的所有 pending，由「场次结束时间 <= now」这一条件兜底判断。
    */
   async expire() {
     const now = timeUtil.now();
     const today = timeUtil.today();
-    const fromDate = timeUtil.addDays(today, -2);
 
     const records = await ReservationRecordModel.getAll(
-      { status: 'pending', date: ['>=', fromDate] },
+      { status: 'pending', date: ['<=', today] },
       '*',
       { date: 'asc' }
     );
@@ -55,7 +56,7 @@ class JobService extends BaseService {
     // 黑名单到期自动解除
     const released = await blacklistService.releaseExpired();
 
-    return { processed: processed, released_blacklist: released, scan_from: fromDate };
+    return { processed: processed, released_blacklist: released, scan_up_to: today };
   }
 
   /**

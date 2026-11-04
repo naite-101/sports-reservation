@@ -1,5 +1,5 @@
 <view class="container">
-  <view class="btn" bindtap="add">+ 发布公告</view>
+  <t-button theme="primary" block="{{true}}" bind:tap="add">+ 发布公告</t-button>
 
   <view class="card" wx:if="{{showForm}}">
     <view class="form-item">
@@ -11,21 +11,21 @@
       <textarea class="form-input" style="height: 240rpx;" value="{{form.content}}" data-field="content" bindinput="onInput" placeholder="公告内容" />
     </view>
     <view class="row" style="gap: 16rpx;">
-      <view class="btn plain" style="flex:1;" bindtap="cancel">取消</view>
-      <view class="btn" style="flex:1;" bindtap="save">保存</view>
+      <t-button theme="primary" variant="outline" style="flex:1;" bind:tap="cancel">取消</t-button>
+      <t-button theme="primary" style="flex:1;" bind:tap="save">保存</t-button>
     </view>
   </view>
 
   <view class="card" wx:for="{{list}}" wx:key="_id">
     <view class="space-between">
       <text style="font-weight: 600; flex:1;">{{item.title}}</text>
-      <text class="tag {{item.status === 'published' ? 'green' : 'gray'}}">{{item.status === 'published' ? '已发布' : '已删除'}}</text>
+      <t-tag size="small" theme="{{item.status === 'published' ? 'success' : 'default'}}" variant="light">{{item.status === 'published' ? '已发布' : '已删除'}}</t-tag>
     </view>
     <view class="text-muted" style="margin-top: 8rpx;">{{item.timeText}}</view>
     <view class="row" style="justify-content: flex-end; gap: 16rpx; margin-top: 12rpx;">
-      <view class="btn plain" style="padding: 8rpx 24rpx;" data-id="{{item._id}}" bindtap="edit">编辑</view>
-      <view class="btn danger" style="padding: 8rpx 24rpx;" data-id="{{item._id}}" bindtap="del">删除</view>
+      <t-button size="small" theme="primary" variant="outline" data-id="{{item._id}}" bind:tap="edit">编辑</t-button>
+      <t-button size="small" theme="danger" data-id="{{item._id}}" bind:tap="del">删除</t-button>
     </view>
   </view>
-  <view class="empty" wx:if="{{!list.length}}">暂无公告</view>
+  <t-empty wx:if="{{!list.length}}" description="暂无公告" />
 </view>

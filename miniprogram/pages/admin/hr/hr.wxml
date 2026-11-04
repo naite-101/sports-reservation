@@ -1,73 +1,75 @@
 <view class="container">
   <view class="type-tabs" style="margin-bottom: 24rpx;">
-    <view class="type-tab {{tab === 'admin' ? 'active' : ''}}" data-tab="admin" bindtap="switchTab">管理员管理</view>
-    <view class="type-tab {{tab === 'student' ? 'active' : ''}}" data-tab="student" bindtap="switchTab" wx:if="{{myRole >= 4}}">学生管理</view>
+    <t-tag t-class="tab-tag" theme="{{tab === 'admin' ? 'primary' : 'default'}}" variant="{{tab === 'admin' ? 'dark' : 'light'}}" data-tab="admin" bind:click="switchTab">管理员管理</t-tag>
+    <t-tag t-class="tab-tag" theme="{{tab === 'student' ? 'primary' : 'default'}}" variant="{{tab === 'student' ? 'dark' : 'light'}}" data-tab="student" bind:click="switchTab" wx:if="{{myRole >= 3}}">成员信息</t-tag>
   </view>
 
   <!-- 管理员管理 -->
   <block wx:if="{{tab === 'admin'}}">
-    <view class="btn" bindtap="toggleAdd">{{showAdd ? '收起' : '+ 任免管理员'}}</view>
+    <t-button theme="primary" block="{{true}}" bind:tap="toggleAdd">{{showAdd ? '收起' : '+ 任免管理员'}}</t-button>
 
     <view class="card" wx:if="{{showAdd}}">
       <view class="form-item">
-        <view class="form-label">openid</view>
-        <input class="form-input" value="{{adminForm.openid}}" data-field="openid" bindinput="onAdminInput" placeholder="输入 openid" />
+        <view class="form-label">学号或姓名</view>
+        <input class="form-input" value="{{adminForm.keyword}}" data-field="keyword" bindinput="onAdminInput" placeholder="输入学号或姓名" />
       </view>
       <view class="form-item">
         <view class="form-label">角色</view>
         <radio-group bindchange="onAdminInput" data-field="role">
           <label style="margin-right: 24rpx;"><radio value="2" checked="{{adminForm.role == 2}}" />普通管理员</label>
-          <label style="margin-right: 24rpx;"><radio value="3" checked="{{adminForm.role == 3}}" />超级管理员</label>
-          <label style="margin-right: 24rpx;"><radio value="4" checked="{{adminForm.role == 4}}" />老师</label>
-          <label><radio value="5" checked="{{adminForm.role == 5}}" />主席</label>
+          <label style="margin-right: 24rpx;" wx:if="{{myRole >= 4}}"><radio value="3" checked="{{adminForm.role == 3}}" />超级管理员</label>
+          <label wx:if="{{myRole >= 4}}"><radio value="4" checked="{{adminForm.role == 4}}" />人事管理员</label>
         </radio-group>
       </view>
       <view class="form-item">
         <view class="form-label">姓名（选填）</view>
         <input class="form-input" value="{{adminForm.name}}" data-field="name" bindinput="onAdminInput" placeholder="姓名" />
       </view>
-      <view class="btn" bindtap="addAdmin">确认任免</view>
+      <t-button theme="primary" block="{{true}}" bind:tap="addAdmin">确认任免</t-button>
     </view>
 
     <view class="card" wx:for="{{admins}}" wx:key="_id">
       <view class="space-between">
         <text style="font-weight: 600;">{{item.name || item._id}}</text>
         <view>
-          <text class="tag green">{{item.roleText}}</text>
-          <text class="tag {{item.status === 1 ? 'green' : 'gray'}}" style="margin-left: 8rpx;">{{item.status === 1 ? '正常' : '已禁用'}}</text>
+          <t-tag size="small" theme="success" variant="light">{{item.roleText}}</t-tag>
+          <t-tag size="small" theme="{{item.status === 1 ? 'success' : 'default'}}" variant="light" style="margin-left: 8rpx;">{{item.status === 1 ? '正常' : '已禁用'}}</t-tag>
         </view>
       </view>
       <view class="text-muted" style="margin-top: 8rpx;">{{item._id}}</view>
       <view class="row" style="justify-content: flex-end; gap: 12rpx; margin-top: 12rpx;" wx:if="{{item.role >= 2}}">
-        <view class="btn plain" style="padding: 8rpx 20rpx;" data-openid="{{item._id}}" data-status="{{item.status}}" data-role="{{item.role}}" bindtap="toggleStatus">{{item.status === 1 ? '禁用' : '启用'}}</view>
-        <view class="btn plain" style="padding: 8rpx 20rpx;" data-openid="{{item._id}}" data-status="{{item.status}}" data-role="{{item.role}}" bindtap="assignRole" wx:if="{{item.role < 5}}">{{roleUpLabel[item.role]}}</view>
-        <view class="btn danger" style="padding: 8rpx 20rpx;" data-openid="{{item._id}}" bindtap="removeAdmin" wx:if="{{myRole >= 4}}">移除</view>
+        <t-button size="small" theme="primary" variant="outline" data-openid="{{item._id}}" data-status="{{item.status}}" data-role="{{item.role}}" bind:tap="toggleStatus">{{item.status === 1 ? '禁用' : '启用'}}</t-button>
+        <t-button size="small" theme="primary" variant="outline" data-openid="{{item._id}}" data-status="{{item.status}}" data-role="{{item.role}}" bind:tap="assignRole" wx:if="{{item.role < 4}}">{{roleUpLabel[item.role]}}</t-button>
+        <t-button size="small" theme="danger" data-openid="{{item._id}}" bind:tap="removeAdmin" wx:if="{{myRole >= 4}}">移除</t-button>
       </view>
     </view>
   </block>
 
-  <!-- 学生管理 -->
+  <!-- 成员信息管理（学生 + 普通管理员） -->
   <block wx:if="{{tab === 'student'}}">
     <view class="card">
       <view class="row" style="gap: 16rpx;">
-        <input class="form-input" style="flex:1;" value="{{keyword}}" bindinput="onKeyword" placeholder="按姓名/学号搜索" />
-        <view class="btn" style="padding: 16rpx 32rpx;" bindtap="search">搜索</view>
+        <input class="form-input" style="flex:1;" value="{{keyword}}" bindinput="onKeyword" placeholder="按姓名/学号搜索学生或普通管理员" />
+        <t-button size="small" bind:tap="search">搜索</t-button>
       </view>
     </view>
 
     <view class="card" wx:for="{{students}}" wx:key="_id">
       <view class="space-between">
         <text style="font-weight: 600;">{{item.name}}</text>
-        <view class="tag green" data-openid="{{item._id}}" bindtap="editStudentTap">编辑</view>
+        <view>
+          <t-tag size="small" theme="{{item.role === 2 ? 'warning' : 'primary'}}" variant="light">{{item.roleText}}</t-tag>
+          <t-tag size="small" theme="primary" variant="light" data-openid="{{item._id}}" bind:click="editStudentTap" style="margin-left: 8rpx;">编辑</t-tag>
+        </view>
       </view>
       <view class="text-muted" style="margin-top: 8rpx;">{{item.student_no}} · {{item.college}} · {{item.phone}}</view>
     </view>
-    <view class="empty" wx:if="{{!students.length}}">暂无学生</view>
+    <t-empty wx:if="{{!students.length}}" description="暂无成员" />
   </block>
 
-  <!-- 学生编辑弹层 -->
+  <!-- 成员编辑弹层 -->
   <view class="card" wx:if="{{editStudent}}">
-    <view class="card-title">编辑学生</view>
+    <view class="card-title">编辑成员信息</view>
     <view class="form-item">
       <view class="form-label">姓名</view>
       <input class="form-input" value="{{studentForm.name}}" data-field="name" bindinput="onStudentInput" />
@@ -85,8 +87,8 @@
       <input class="form-input" value="{{studentForm.college}}" data-field="college" bindinput="onStudentInput" />
     </view>
     <view class="row" style="gap: 16rpx;">
-      <view class="btn plain" style="flex:1;" bindtap="cancelEdit">取消</view>
-      <view class="btn" style="flex:1;" bindtap="saveStudent">保存</view>
+      <t-button theme="primary" variant="outline" style="flex:1;" bind:tap="cancelEdit">取消</t-button>
+      <t-button theme="primary" style="flex:1;" bind:tap="saveStudent">保存</t-button>
     </view>
   </view>
 </view>

@@ -1,7 +1,80 @@
+/* 动态二维码核销页：居中、留白、线性图标 */
+
+.qrcode-page {
+  text-align: center;
+}
+
+.qr-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-title-icon {
+  margin-right: 10rpx;
+}
+
+/* 二维码展示区：白色圆角容器 */
+.qr-stage {
+  background: #fff;
+  border: 2rpx solid #eef0f2;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  display: inline-block;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 倒计时刷新标签：浅暖橙 */
+.qr-tip {
+  margin-top: 24rpx;
+  font-size: 24rpx;
+  color: #e8964b;
+  background: #fdf1e7;
+  border-radius: 999rpx;
+  display: inline-block;
+  padding: 10rpx 26rpx;
+}
+
+/* 有效预约信息卡 */
+.booking-info-card {
+  text-align: left;
+}
+
 .info-row {
   display: flex;
   justify-content: space-between;
-  padding: 12rpx 0;
+  align-items: center;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #f2f3f5;
   font-size: 28rpx;
-  color: #555;
+}
+
+.info-row--last {
+  border-bottom: none;
+}
+
+.info-label {
+  color: #999;
+}
+
+.info-value {
+  color: #333;
+  font-weight: 500;
+}
+
+.empty-card {
+  text-align: center;
+}
+
+.empty-guide {
+  margin-top: -8rpx;
+  line-height: 1.6;
+}
+
+/* 底部小字提示 */
+.qr-footnote {
+  margin-top: 28rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #b0b2b5;
 }

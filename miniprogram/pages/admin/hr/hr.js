@@ -1,8 +1,8 @@
 const request = require('../../../utils/request.js');
 
-const ROLE_TEXT = { 2: '普通管理员', 3: '超级管理员', 4: '老师', 5: '现任主席' };
-// 每个角色「提升」按钮的文案（升到更高一级）；主席(5) 已最高，不再显示提升
-const ROLE_UP_LABEL = { 2: '升为超管', 3: '升为老师', 4: '升为主席', 5: '' };
+const ROLE_TEXT = { 1: '学生', 2: '普通管理员', 3: '超级管理员', 4: '人事管理员' };
+// 每个角色「提升」按钮的文案（升到更高一级）；人事管理员(4) 已最高，不再显示提升
+const ROLE_UP_LABEL = { 2: '升为超管', 3: '升为人事管理员', 4: '' };
 
 Page({
   data: {
@@ -12,7 +12,7 @@ Page({
     students: [],
     keyword: '',
     showAdd: false,
-    adminForm: { openid: '', role: 2, name: '' },
+    adminForm: { keyword: '', role: 2, name: '' },
     roleUpLabel: ROLE_UP_LABEL,
     editStudent: null,
     studentForm: { openid: '', name: '', student_no: '', phone: '', college: '' },
@@ -51,7 +51,9 @@ Page({
     } else {
       try {
         const data = await request.call('hr/student_list', { keyword: this.data.keyword, page: 1, size: 100 }, { silent: true });
-        this.setData({ students: data.list || [] });
+        this.setData({
+          students: (data.list || []).map((s) => Object.assign({}, s, { roleText: ROLE_TEXT[s.role] || s.role })),
+        });
       } catch (e) {
         this.setData({ students: [] });
       }
@@ -67,7 +69,7 @@ Page({
   },
 
   toggleAdd() {
-    this.setData({ showAdd: !this.data.showAdd, adminForm: { openid: '', role: 2, name: '' } });
+    this.setData({ showAdd: !this.data.showAdd, adminForm: { keyword: '', role: 2, name: '' } });
   },
 
   onAdminInput(e) {
@@ -77,12 +79,12 @@ Page({
 
   async addAdmin() {
     const f = this.data.adminForm;
-    if (!f.openid) {
-      wx.showToast({ title: '请输入 openid', icon: 'none' });
+    if (!f.keyword) {
+      wx.showToast({ title: '请输入学号或姓名', icon: 'none' });
       return;
     }
     try {
-      await request.call('hr/admin_add', { openid: f.openid, role: Number(f.role), name: f.name });
+      await request.call('hr/admin_add', { keyword: f.keyword, role: Number(f.role), name: f.name });
       wx.showToast({ title: '已任免', icon: 'success' });
       this.setData({ showAdd: false });
       this.load();
@@ -123,13 +125,13 @@ Page({
     } catch (err) {}
   },
 
-  // 调整权限：逐级提升（普通管理员2 → 超管3 → 老师4 → 主席5）
+  // 调整权限：逐级提升（普通管理员2 → 超管3 → 人事管理员4）
   // 降级需求较小，前端仅提供「提升」；后端 hr/admin_assign 按操作者权限兜底校验
   async assignRole(e) {
     const openid = e.currentTarget.dataset.openid;
     const status = Number(e.currentTarget.dataset.status);
     const role = Number(e.currentTarget.dataset.role);
-    if (role >= 5) return; // 主席已是最高权限，无可提升
+    if (role >= 4) return; // 人事管理员已是最高权限，无可提升
     const next = role + 1;
     const res = await new Promise((resolve) => {
       wx.showModal({

@@ -21,7 +21,7 @@ class ReservationService extends BaseService {
 
     const where = venue_type ? { venue_type: venue_type } : {};
     const venues = await VenueModel.getAll(where, '*', { court_no: 'asc' });
-    const bookings = await ReservationModel.getAll({ date: date, slot_key: slot_key }, 'venue_key');
+    const bookings = await ReservationModel.getAll({ date: date, slot_key: slot_key, status: 'pending' }, 'venue_key');
     const bookedSet = {};
     bookings.forEach((b) => { bookedSet[b.venue_key] = true; });
 
@@ -88,7 +88,7 @@ class ReservationService extends BaseService {
     // 唯一索引无法由 SDK 自动创建（见 README 第 5 步），缺索引时这里补一次跨场地查重。
     // 拉取该学生该日期该场次的全量预约后自行判断，避免依赖 neq 数据库条件在不同版本上的兼容差异。
     const existing = await ReservationModel.getAll(
-      { student_openid: openId, date: date, slot_key: slot_key },
+      { student_openid: openId, date: date, slot_key: slot_key, status: 'pending' },
       'venue_key'
     );
     if (existing.some((r) => r.venue_key && r.venue_key !== venue_key)) {
@@ -168,7 +168,7 @@ class ReservationService extends BaseService {
       if (takenCnt > 0) {
         this.AppError('该场地已被预约', appCode.VENUE_TAKEN);
       }
-      const dupCnt = await ReservationModel.count({ student_openid: openId, date: date, slot_key: slot_key });
+      const dupCnt = await ReservationModel.count({ student_openid: openId, date: date, slot_key: slot_key, status: 'pending' });
       if (dupCnt > 0) {
         this.AppError('您在该时段已预约其他场地', appCode.DUPLICATE_SLOT);
       }

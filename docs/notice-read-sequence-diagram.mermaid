@@ -1,0 +1,47 @@
+sequenceDiagram
+    participant U as 用户
+    participant H as 首页 index.js
+    participant N as 公告页 notice.js
+    participant App as 云函数 application
+    participant NC as NoticeController
+    participant NS as NoticeService
+    participant NM as NoticeModel
+    participant NRM as NoticeReadModel
+
+    U->>H: 进入首页 onShow
+    H->>App: call notice/list {page:1,size:5}
+    App->>NC: list()
+    NC->>NS: list(1,5,openId)
+    NS->>NM: getList({status:published}, desc)
+    NM-->>NS: list
+    NS->>NRM: getAll({openid, notice_id in ids}, 'notice_id')
+    NRM-->>NS: readRows
+    NS-->>H: list（每项含 is_read）
+    H->>H: 渲染公告区 3 条（未读=红标）
+
+    U->>H: 点击某条公告
+    H->>N: navigateTo /pages/notice/notice?id=x
+    N->>App: call notice/detail {id:x}
+    App->>NC: detail()
+    NC->>NS: detail(x)
+    NS->>NM: getOne(x)
+    NM-->>NS: notice
+    NS-->>N: detail
+    N->>App: call notice/read {notice_id:x}（silent）
+    App->>NC: read()
+    NC->>NS: read(openId, x)
+    NS->>NRM: getOne({openid, notice_id:x})
+    NRM-->>NS: null
+    NS->>NRM: insert({openid, notice_id:x, read_time})
+    NRM-->>NS: ok
+    NS-->>N: {read:true}
+    N->>N: 本地将该条 is_read=true
+
+    U->>H: 返回首页
+    H->>H: onShow 重新 init
+    H->>App: call notice/list
+    App->>NS: list(...)
+    NS->>NRM: getAll(openid, ids)
+    NRM-->>NS: readRows（含 x）
+    NS-->>H: 该条 is_read=true
+    H->>H: 公告区该条标签=已读（蓝标）

@@ -1,0 +1,24 @@
+<view class="container">
+  <view class="card">
+    <view class="card-title">轮播图管理</view>
+    <t-button theme="primary" block="{{true}}" bind:tap="chooseAndUpload">上传图片</t-button>
+  </view>
+
+  <view class="card" wx:if="{{banners.length === 0}}">
+    <t-empty description="暂无轮播图" />
+  </view>
+
+  <view class="card" wx:else>
+    <view class="banner-item" wx:for="{{banners}}" wx:key="_id">
+      <image class="banner-thumb" src="{{item.fileID}}" mode="aspectFill" />
+      <view class="banner-info">
+        <view class="banner-order">顺序：{{item.sort}}</view>
+        <view class="banner-ops">
+          <view class="op-btn" data-index="{{index}}" data-dir="-1" bind:tap="onMove">上移</view>
+          <view class="op-btn" data-index="{{index}}" data-dir="1" bind:tap="onMove">下移</view>
+          <view class="op-btn op-btn--danger" data-id="{{item._id}}" bind:tap="onRemove">删除</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,17 +1,2 @@
-.type-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-
-.type-tab {
-  padding: 14rpx 24rpx;
-  background: #f0f0f0;
-  border-radius: 12rpx;
-  font-size: 26rpx;
-}
-
-.type-tab.active {
-  background: #1f7a4d;
-  color: #fff;
-}
+/* 系统日志页已使用 TDesign 组件（t-tag / t-empty），
+   布局样式复用全局 app.wxss，无需额外页面样式。 */

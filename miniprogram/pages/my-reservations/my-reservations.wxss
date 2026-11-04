@@ -1,1 +1,107 @@
-/* 使用全局样式 */
+/* 我的预约列表：纵向卡片 + 状态标签 */
+
+.order-card {
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-title {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  margin-right: 16rpx;
+}
+
+.order-icon {
+  margin-right: 14rpx;
+}
+
+.order-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 状态标签：待签到浅橙 / 已完成浅绿 / 已取消浅灰 */
+.status-badge {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  font-weight: 500;
+  border-radius: 999rpx;
+  padding: 8rpx 20rpx;
+}
+
+.status--pending {
+  background: #fdf1e7;
+  color: #e8964b;
+}
+
+.status--checked_in {
+  background: #eaf6fd;
+  color: #3557F2;
+}
+
+.status--cancelled {
+  background: #f0f1f2;
+  color: #9aa0a6;
+}
+
+/* 未签到（爽约）：红色系，更醒目 */
+.status--expired {
+  background: #fdecec;
+  color: #e34d59;
+}
+
+/* 信息分组：浅灰底、圆角 */
+.order-meta {
+  margin-top: 20rpx;
+  background: #f7f8f9;
+  border-radius: 14rpx;
+  padding: 8rpx 20rpx;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #eef0f2;
+  font-size: 26rpx;
+}
+
+.meta-row:last-child {
+  border-bottom: none;
+}
+
+.meta-label {
+  color: #999;
+  margin-right: 20rpx;
+  min-width: 72rpx;
+}
+
+.meta-value {
+  color: #444;
+}
+
+.order-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20rpx;
+}
+
+/* 空态容器 */
+.res-empty {
+  padding-top: 20rpx;
+}

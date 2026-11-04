@@ -2,27 +2,34 @@
   <view class="card">
     <view class="card-title">场馆筛选</view>
     <view class="type-tabs">
-      <view class="type-tab {{activeType === item.key ? 'active' : ''}}" wx:for="{{types}}" wx:key="key" data-key="{{item.key}}" bindtap="onTapType">{{item.name}}</view>
+      <t-tag
+        theme="{{activeType === item.key ? 'primary' : 'default'}}"
+        variant="{{activeType === item.key ? 'dark' : 'light'}}"
+        wx:for="{{types}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bind:click="onTapType"
+      >{{item.name}}</t-tag>
     </view>
   </view>
 
   <view class="card">
     <view class="card-title">场次筛选（可选）</view>
     <view class="type-tabs">
-      <view class="type-tab {{activeSlot === '' ? 'active' : ''}}" data-key="" bindtap="onTapSlot">全部</view>
-      <view class="type-tab {{activeSlot === '1300_1410' ? 'active' : ''}}" data-key="1300_1410" bindtap="onTapSlot">13:00</view>
-      <view class="type-tab {{activeSlot === '1820_1930' ? 'active' : ''}}" data-key="1820_1930" bindtap="onTapSlot">18:20</view>
-      <view class="type-tab {{activeSlot === '1940_2050' ? 'active' : ''}}" data-key="1940_2050" bindtap="onTapSlot">19:40</view>
+      <t-tag theme="{{activeSlot === '' ? 'primary' : 'default'}}" variant="{{activeSlot === '' ? 'dark' : 'light'}}" data-key="" bind:click="onTapSlot">全部</t-tag>
+      <t-tag theme="{{activeSlot === '1300_1410' ? 'primary' : 'default'}}" variant="{{activeSlot === '1300_1410' ? 'dark' : 'light'}}" data-key="1300_1410" bind:click="onTapSlot">13:00</t-tag>
+      <t-tag theme="{{activeSlot === '1820_1930' ? 'primary' : 'default'}}" variant="{{activeSlot === '1820_1930' ? 'dark' : 'light'}}" data-key="1820_1930" bind:click="onTapSlot">18:20</t-tag>
+      <t-tag theme="{{activeSlot === '1940_2050' ? 'primary' : 'default'}}" variant="{{activeSlot === '1940_2050' ? 'dark' : 'light'}}" data-key="1940_2050" bind:click="onTapSlot">19:40</t-tag>
     </view>
   </view>
 
   <view class="card" wx:for="{{list}}" wx:key="res_id">
     <view class="space-between">
       <text style="font-weight: 600;">{{item.student_name}}（{{item.venue_type_name}} {{item.court_no}}号）</text>
-      <text class="tag green">已签到</text>
+      <t-tag size="small" theme="success" variant="light">已签到</t-tag>
     </view>
     <view class="text-muted" style="margin-top: 8rpx;">{{item.date}} {{item.slot_key}} · {{item.checkinText}}</view>
     <view class="text-muted" wx:if="{{item.companions.length}}">附属：{{item.companionsText}}</view>
   </view>
-  <view class="empty" wx:if="{{!list.length}}">今日暂无签到记录</view>
+  <t-empty wx:if="{{!list.length}}" description="今日暂无签到记录" />
 </view>

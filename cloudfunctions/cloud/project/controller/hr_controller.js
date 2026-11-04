@@ -6,12 +6,13 @@ const HrService = require('../service/hr_service.js');
 
 class HrController extends BaseController {
   async adminList() {
-    return await new HrService().adminList();
+    return await new HrService().adminList(this._user);
   }
 
   async adminAdd() {
     const input = this.validateData({
-      openid: 'must|string|name=openid',
+      openid: 'string|default=',
+      keyword: 'string|default=',
       role: 'must|int|name=角色',
       name: 'string|default=',
     });

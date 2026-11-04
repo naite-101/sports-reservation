@@ -1,6 +1,32 @@
+/* 预约须知：三卡片 + 浅橙重点 + 浅绿签到区分 */
+
 .rule {
   font-size: 28rpx;
   color: #555;
-  line-height: 1.7;
-  margin-bottom: 8rpx;
+  line-height: 1.9;
+  margin-bottom: 12rpx;
+}
+
+/* 重点条款：浅暖橙底、无边框、暖橙文字 */
+.rule-highlight {
+  background: #fdf1e7;
+  color: #c0713c;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 16rpx;
+}
+
+/* 签到说明卡片：浅绿底做区分 */
+.checkin-card {
+  background: #eaf6fd;
+}
+
+/* 卡片标题内图标留白 */
+.card-title--icon {
+  display: flex;
+  align-items: center;
+}
+
+.title-icon {
+  margin-right: 10rpx;
 }
