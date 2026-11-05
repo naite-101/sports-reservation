@@ -15,6 +15,9 @@ module.exports = {
   'reservation/create': { controller: 'reservation_controller', action: 'create', role: 1 },
   'reservation/cancel': { controller: 'reservation_controller', action: 'cancel', role: 1 },
 
+  // ---------- 验证码（防脚本：预约前的人机校验） ----------
+  'captcha/issue': { controller: 'captcha_controller', action: 'issue', role: 1 },
+
   // ---------- 我的 / 记录 / 二维码 ----------
   'my/reservations': { controller: 'my_controller', action: 'reservations', role: 1 },
   'my/records': { controller: 'my_controller', action: 'records', role: 1 },

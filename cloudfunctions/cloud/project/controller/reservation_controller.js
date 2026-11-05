@@ -19,6 +19,8 @@ class ReservationController extends BaseController {
       date: 'must|date|name=日期',
       slot_key: 'must|string|name=场次',
       venue_key: 'must|string|name=场地',
+      captcha_token: 'string|default=',
+      captcha_answer: 'string|default=',
     });
     return await new ReservationService().create(this._openId, this._user, input);
   }

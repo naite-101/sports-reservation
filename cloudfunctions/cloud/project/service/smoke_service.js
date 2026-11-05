@@ -19,6 +19,25 @@ const VenueModel = require('../model/venue_model.js');
 const TimeSlotModel = require('../model/time_slot_model.js');
 const ConfigModel = require('../model/config_model.js');
 const UserModel = require('../model/user_model.js');
+const CaptchaService = require('./captcha_service.js');
+
+/** 解析验证码题目得到正确答案（预约前需答对人机校验） */
+function solveCaptcha(q) {
+  const m = /^(\d+)\s*([+\-×])\s*(\d+)\s*=\s*\?$/.exec(String(q).trim());
+  if (!m) return '';
+  const a = Number(m[1]);
+  const b = Number(m[3]);
+  if (m[2] === '+') return String(a + b);
+  if (m[2] === '-') return String(a - b);
+  if (m[2] === '×') return String(a * b);
+  return '';
+}
+
+/** 为冒烟测试自动获取并答对验证码 */
+async function captchaFor(openid) {
+  const cap = await new CaptchaService().issue(openid);
+  return { captcha_token: cap.token, captcha_answer: solveCaptcha(cap.question) };
+}
 
 class SmokeService extends BaseService {
   async run() {
@@ -32,9 +51,9 @@ class SmokeService extends BaseService {
         const ok = await dbUtil.isExistCollection(name);
         if (!ok) missing.push(name);
       }
-      add('集合齐全(12个)', missing.length === 0, missing.length ? '缺失: ' + missing.join(', ') : '全部存在');
+      add('集合齐全(' + Object.keys(config.COLLECTION).length + '个)', missing.length === 0, missing.length ? '缺失: ' + missing.join(', ') : '全部存在');
     } catch (e) {
-      add('集合齐全(12个)', false, '检查异常: ' + (e.message || e));
+      add('集合齐全(' + Object.keys(config.COLLECTION).length + '个)', false, '检查异常: ' + (e.message || e));
     }
 
     // ---------- 2. 初始化数据 ----------
@@ -148,15 +167,19 @@ class SmokeService extends BaseService {
       if (!bookSlot) {
         chainDetail = '无可用未来场次，跳过链路测试';
       } else {
+        const cap1 = await captchaFor(idxUser);
         const created = await svc.create(idxUser, fakeUser, {
           date: bookDate, slot_key: bookSlot.slot_key, venue_key: bookVenue,
+          captcha_token: cap1.captcha_token, captcha_answer: cap1.captcha_answer,
         });
         const resId = created && created.res_id ? created.res_id : (bookDate + '_' + bookSlot.slot_key + '_' + bookVenue);
         // 释放
         await svc.cancel(idxUser, { res_id: resId });
         // 再约同场地应成功（证明释放后释放了占用）
+        const cap2 = await captchaFor(idxUser);
         await svc.create(idxUser, fakeUser, {
           date: bookDate, slot_key: bookSlot.slot_key, venue_key: bookVenue,
+          captcha_token: cap2.captcha_token, captcha_answer: cap2.captcha_answer,
         });
         chainOk = true;
         chainDetail = '预约→取消→再约 成功（场地释放后再次占用正常）';

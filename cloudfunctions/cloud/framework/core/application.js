@@ -93,6 +93,12 @@ async function app(event, context) {
       }
     }
 
+    // 通用写接口限流（防脚本高频刷）：鉴权通过后、执行前，按 RATE_LIMIT 配置做窗口冷却
+    if (!isJobRoute && openId && config.RATE_LIMIT && config.RATE_LIMIT[route]) {
+      const CaptchaService = require('../../project/service/captcha_service.js');
+      await new CaptchaService().checkRateLimit(openId, route);
+    }
+
     // 实例化 controller 并调用 action
     const ControllerClass = require('../../project/controller/' + routeDef.controller + '.js');
     const controller = new ControllerClass(route, openId, user, role, event);

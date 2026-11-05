@@ -8,6 +8,7 @@ const StudentSlotLockModel = require('../model/student_slot_lock_model.js');
 const VenueModel = require('../model/venue_model.js');
 const TimeSlotModel = require('../model/time_slot_model.js');
 const ConfigModel = require('../model/config_model.js');
+const CaptchaService = require('./captcha_service.js');
 const dbUtil = require('../../framework/database/db_util.js');
 const config = require('../../config/config.js');
 const timeUtil = require('../../framework/utils/time_util.js');
@@ -42,8 +43,8 @@ class ReservationService extends BaseService {
     });
   }
 
-  /** 提交预约（事务 + 唯一键冲突映射） */
-  async create(openId, user, { date, slot_key, venue_key }) {
+  /** 提交预约（事务 + 唯一键冲突映射 + 人机验证码校验） */
+  async create(openId, user, { date, slot_key, venue_key, captcha_token, captcha_answer }) {
     if (!user || !user.info_completed) this.AppError('请先完善个人信息', appCode.NO_PROFILE);
     const now = timeUtil.now();
 
@@ -95,6 +96,9 @@ class ReservationService extends BaseService {
     if (existing.some((r) => r.venue_key && r.venue_key !== venue_key)) {
       this.AppError('您在该时段已预约其他场地', appCode.DUPLICATE_SLOT);
     }
+
+    // 人机验证码校验（防脚本抢预约）：所有轻量预检通过后、真正提交前一次性消费验证码
+    await new CaptchaService().verify(openId, captcha_token, captcha_answer);
 
     const resId = date + '_' + slot_key + '_' + venue_key;
     const resData = {

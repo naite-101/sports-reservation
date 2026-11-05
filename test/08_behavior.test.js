@@ -15,6 +15,7 @@ const config = require(path.join(CF, 'config/config.js'));
 const timeUtil = require(path.join(CF, 'framework/utils/time_util.js'));
 const appCode = require(path.join(CF, 'framework/core/app_code.js'));
 const ReservationService = require(path.join(CF, 'project/service/reservation_service.js'));
+const CaptchaService = require(path.join(CF, 'project/service/captcha_service.js'));
 const VenueService = require(path.join(CF, 'project/service/venue_service.js'));
 const JobService = require(path.join(CF, 'project/service/job_service.js'));
 const HrService = require(path.join(CF, 'project/service/hr_service.js'));
@@ -95,8 +96,26 @@ function userOf(id) {
   return mock.dump(config.COLLECTION.users).find((u) => u._id === id);
 }
 
-function book(openid, opts) {
-  return new ReservationService().create(openid, userOf(openid), opts);
+/** 解析验证码题目得到正确答案（预约前需自动答对验证码） */
+function solveCaptcha(q) {
+  const m = /^(\d+)\s*([+\-×])\s*(\d+)\s*=\s*\?$/.exec(String(q).trim());
+  if (!m) return '';
+  const a = Number(m[1]);
+  const b = Number(m[3]);
+  if (m[2] === '+') return String(a + b);
+  if (m[2] === '-') return String(a - b);
+  if (m[2] === '×') return String(a * b);
+  return '';
+}
+
+/** 预约：自动获取并答对验证码（预约接口已接入人机校验） */
+async function book(openid, opts) {
+  const cap = await new CaptchaService().issue(openid);
+  const withCaptcha = Object.assign({}, opts, {
+    captcha_token: cap.token,
+    captcha_answer: solveCaptcha(cap.question),
+  });
+  return new ReservationService().create(openid, userOf(openid), withCaptcha);
 }
 
 async function expectOk(fn, label) {

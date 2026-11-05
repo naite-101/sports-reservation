@@ -44,6 +44,10 @@ module.exports = {
     // 学生时段锁：_id = `${openid}_${date}_${slot_key}`，用主键天然唯一兜底「同一学生同一时段只约 1 个场地」，
     // 替代需要控制台手动创建的 uniq_student_slot 唯一索引（SDK 无法自动建索引）。
     student_slot_locks: 'student_slot_locks',
+    // 验证码：预约前的图形/算术人机校验（token 一次性、短有效期、绑定 openid）
+    captchas: 'captchas',
+    // 防刷限流：主键 `openid_route_窗口` 原子抢占，实现「同一用户同一接口在窗口内仅 1 次」的冷却限流
+    anti_abuse: 'anti_abuse',
   },
 
   // 场馆类型与场地数量
@@ -64,6 +68,19 @@ module.exports = {
 
   // 签到窗口：场次开始前 N 分钟
   CHECKIN_BEFORE_MIN: 15,
+
+  // 验证码有效期（毫秒，2 分钟）
+  CAPTCHA_EXPIRE_MS: 120000,
+
+  // 通用写接口限流：route -> 冷却窗口（毫秒）。同一 openid 同一接口在窗口内仅允许 1 次请求。
+  // 用 anti_abuse 集合主键原子抢占实现，避免内存方案在多实例下失效。
+  // 注意：仅覆盖「学生侧易被脚本刷」的接口；管理员签到等幂等接口不在此列。
+  RATE_LIMIT: {
+    'reservation/create': 3000,
+    'reservation/cancel': 3000,
+    'qrcode/generate': 2000,
+    'passport/save_profile': 5000,
+  },
 
   // 初始化超管账号 openid（部署时填写该管理员微信 openid；为空则跳过）
   INIT_ADMIN_OPENID: '',

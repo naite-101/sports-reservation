@@ -20,4 +20,9 @@ module.exports = {
   SLOT_MISMATCH: 4105, // 预约场次不匹配
   VENUE_CLOSED: 4106, // 场地闭馆不可预约
   CANCEL_TOO_LATE: 4107, // 已过取消时间
+
+  CAPTCHA_REQUIRED: 4200, // 未携带验证码（防脚本人机校验缺失）
+  CAPTCHA_INVALID: 4201, // 验证码失效/过期/已使用/不匹配
+  CAPTCHA_WRONG: 4202, // 验证码答案错误
+  TOO_FREQUENT: 4203, // 操作过于频繁（触发限流/冷却）
 };

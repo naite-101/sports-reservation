@@ -17,7 +17,20 @@ const config = require(path.join(CF, 'config/config.js'));
 const timeUtil = require(path.join(CF, 'framework/utils/time_util.js'));
 const appCode = require(path.join(CF, 'framework/core/app_code.js'));
 const ReservationService = require(path.join(CF, 'project/service/reservation_service.js'));
+const CaptchaService = require(path.join(CF, 'project/service/captcha_service.js'));
 const initData = require(path.join(CF, 'project/init/init_data.js'));
+
+/** 解析验证码题目得到正确答案 */
+function solveCaptcha(q) {
+  const m = /^(\d+)\s*([+\-×])\s*(\d+)\s*=\s*\?$/.exec(String(q).trim());
+  if (!m) return '';
+  const a = Number(m[1]);
+  const b = Number(m[3]);
+  if (m[2] === '+') return String(a + b);
+  if (m[2] === '-') return String(a - b);
+  if (m[2] === '×') return String(a * b);
+  return '';
+}
 
 const N = Number(process.argv[2]) || 1000; // 并发人数
 const VENUES = Number(process.argv[3]) || 6; // 场地数（羽毛球场）
@@ -70,8 +83,10 @@ async function main() {
     const user = mock.dump(config.COLLECTION.users).find((u) => u.openid === openid);
     const venueKey = 'badminton#' + ((i % VENUES) + 1);
     try {
+      const cap = await new CaptchaService().issue(openid);
       const r = await svc.create(openid, user, {
         date: tomorrow, slot_key: slotObj.slot_key, venue_key: venueKey,
+        captcha_token: cap.token, captcha_answer: solveCaptcha(cap.question),
       });
       results.ok++;
       okVenues[venueKey] = (okVenues[venueKey] || 0) + 1;

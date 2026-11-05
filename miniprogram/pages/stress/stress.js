@@ -106,10 +106,14 @@ Page({
     wx.showLoading({ title: '抢场地中...' });
     let ok = false, code = '', msg = '';
     try {
+      // 自动获取并答对验证码（压测页自动通过人机校验，聚焦服务端并发抢场逻辑）
+      const cap = await request.call('captcha/issue', {}, { silent: true });
       const res = await request.call('reservation/create', {
         date: date,
         slot_key: activeSlotKey,
         venue_key: targetCourt,
+        captcha_token: cap.token,
+        captcha_answer: solveCaptcha(cap.question),
       }, { silent: true });
       ok = true;
       code = '200';
@@ -155,7 +159,23 @@ function codeText(code, e) {
     '4106': '场地闭馆',
     '4010': '请先完善个人信息',
     '4004': '你已被拉黑',
+    '4200': '验证码缺失',
+    '4201': '验证码失效',
+    '4202': '验证码答案错误',
+    '4203': '操作过于频繁',
   };
   if (map[code]) return map[code];
   return (e && e.msg) ? e.msg : ('失败 code=' + code);
+}
+
+/** 解析验证码题目得到正确答案 */
+function solveCaptcha(q) {
+  const m = /^(\d+)\s*([+\-×])\s*(\d+)\s*=\s*\?$/.exec(String(q).trim());
+  if (!m) return '';
+  const a = Number(m[1]);
+  const b = Number(m[3]);
+  if (m[2] === '+') return String(a + b);
+  if (m[2] === '-') return String(a - b);
+  if (m[2] === '×') return String(a * b);
+  return '';
 }
