@@ -26,9 +26,6 @@ test('错误码与 ARCHITECTURE §9.2 一致', () => {
   assertEqual(appCode.SLOT_MISMATCH, 4105);
   assertEqual(appCode.VENUE_CLOSED, 4106);
   assertEqual(appCode.CANCEL_TOO_LATE, 4107);
-  assertEqual(appCode.CAPTCHA_REQUIRED, 4200);
-  assertEqual(appCode.CAPTCHA_INVALID, 4201);
-  assertEqual(appCode.CAPTCHA_WRONG, 4202);
   assertEqual(appCode.TOO_FREQUENT, 4203);
 });
 
@@ -49,12 +46,10 @@ test('业务常量：二维码 20s / 爽约 10 天 / 签到前 15 分钟 / 开�
   assertEqual(config.DEFAULT_OPEN_TIME, { hour: 21, minute: 0 });
 });
 
-test('防脚本配置：验证码有效期 2 分钟 + 预约/取消/二维码等写接口限流', () => {
-  assertEqual(config.CAPTCHA_EXPIRE_MS, 120000);
+test('防脚本配置：预约/取消/二维码等写接口窗口冷却限流（无感人机验证替代）', () => {
   assertEqual(config.RATE_LIMIT['reservation/create'], 3000);
   assertEqual(config.RATE_LIMIT['reservation/cancel'], 3000);
   assertEqual(config.RATE_LIMIT['qrcode/generate'], 2000);
-  assertEqual(config.COLLECTION.captchas, 'captchas');
   assertEqual(config.COLLECTION.anti_abuse, 'anti_abuse');
 });
 

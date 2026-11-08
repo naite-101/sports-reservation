@@ -86,28 +86,4 @@
   >提交预约</t-button>
 
   <view class="booking-tip">每天 21:00 开放次日场次预约，先到先得</view>
-
-  <!-- 人机验证码弹窗（防脚本抢预约） -->
-  <view class="captcha-mask" wx:if="{{captchaVisible}}" bind:tap="onCaptchaMaskTap">
-    <view class="captcha-dialog" catch:tap="noop">
-      <view class="captcha-title">人机验证</view>
-      <view class="captcha-desc">为防止脚本抢预约，请完成验证</view>
-      <view class="captcha-question-row">
-        <text class="captcha-question">{{captchaQuestion}}</text>
-        <text class="captcha-refresh" bind:tap="refreshCaptcha">换一题</text>
-      </view>
-      <input
-        class="captcha-input"
-        type="number"
-        placeholder="请输入答案"
-        value="{{captchaAnswer}}"
-        bindinput="onCaptchaInput"
-        focus="{{captchaVisible}}"
-      />
-      <view class="captcha-actions">
-        <view class="captcha-btn captcha-btn--cancel" bind:tap="closeCaptcha">取消</view>
-        <view class="captcha-btn captcha-btn--ok" bind:tap="submitWithCaptcha">确定</view>
-      </view>
-    </view>
-  </view>
 </view>

@@ -21,11 +21,6 @@ Page({
     selectedCourt: '',
     blackDays: 0,
     loading: true,
-    // 人机验证码（防脚本抢预约）
-    captchaVisible: false,
-    captchaToken: '',
-    captchaQuestion: '',
-    captchaAnswer: '',
   },
 
   onLoad(options) {
@@ -44,17 +39,16 @@ Page({
       this.setData({ blackDays: login.black_days || 0 });
 
       const slotData = await request.call('slot/list', {}, { silent: true });
-      const now = new Date();
-      const openMin = (slotData.open_time.hour || 0) * 60 + (slotData.open_time.minute || 0);
-      const nowMin = now.getHours() * 60 + now.getMinutes();
       const isToday = !!slotData.is_today;
 
+      // L-9：开放判定以服务端 slot/list 为准（is_today/date 已由服务器按开放时间算好），
+      //      不再用设备本地时间判断（防本地时钟不准导致按钮误禁用）
       this.setData({
         date: slotData.date,
         slots: slotData.slots,
         openTime: slotData.open_time,
         isToday: isToday,
-        openReached: isToday ? true : (nowMin >= openMin),
+        openReached: !!slotData.date,
         activeSlotKey: slotData.slots.length ? slotData.slots[0].slot_key : '',
         loading: false,
       });
@@ -110,70 +104,13 @@ Page({
       wx.showToast({ title: '请选择场地', icon: 'none' });
       return;
     }
-    // 防脚本：提交前先弹出人机验证码，答对后才真正提交
-    await this.fetchCaptcha();
-  },
-
-  /** 获取验证码并弹出验证框 */
-  async fetchCaptcha() {
-    try {
-      const cap = await request.call('captcha/issue', {}, { silent: true });
-      this.setData({
-        captchaVisible: true,
-        captchaToken: cap.token,
-        captchaQuestion: cap.question,
-        captchaAnswer: '',
-      });
-    } catch (e) {
-      wx.showToast({ title: '验证码获取失败，请重试', icon: 'none' });
-    }
-  },
-
-  /** 换一题（重新获取验证码） */
-  async refreshCaptcha() {
-    try {
-      const cap = await request.call('captcha/issue', {}, { silent: true });
-      this.setData({
-        captchaToken: cap.token,
-        captchaQuestion: cap.question,
-        captchaAnswer: '',
-      });
-    } catch (e) {
-      wx.showToast({ title: '刷新失败，请重试', icon: 'none' });
-    }
-  },
-
-  onCaptchaInput(e) {
-    this.setData({ captchaAnswer: e.detail.value });
-  },
-
-  closeCaptcha() {
-    this.setData({ captchaVisible: false, captchaAnswer: '' });
-  },
-
-  onCaptchaMaskTap() {
-    this.closeCaptcha();
-  },
-
-  noop() {},
-
-  /** 验证码答对后真正提交预约 */
-  async submitWithCaptcha() {
-    const { date, activeSlotKey, selectedCourt, captchaToken, captchaAnswer } = this.data;
-    const answer = String(captchaAnswer || '').trim();
-    if (!answer) {
-      wx.showToast({ title: '请输入验证码答案', icon: 'none' });
-      return;
-    }
-    this.setData({ captchaVisible: false });
+    // 防脚本已改为「纯服务端窗口限流」（application 层 3 秒冷却），预约无需人机验证码，点一下直接提交。
     wx.showLoading({ title: '提交中...' });
     try {
       await request.call('reservation/create', {
         date: date,
         slot_key: activeSlotKey,
         venue_key: selectedCourt,
-        captcha_token: captchaToken,
-        captcha_answer: answer,
       }, { silent: true });
       wx.hideLoading();
       wx.showModal({
@@ -201,9 +138,6 @@ Page({
       4106: '该场地临时闭馆，不可预约',
       4010: '请先完善个人信息',
       4004: '您已被限制预约',
-      4200: '请先完成人机验证',
-      4201: '验证码已失效，请刷新后重试',
-      4202: '验证码答案错误',
       4203: '操作过于频繁，请稍后再试',
     };
     const title = titleMap[code] || (e && e.msg) || '预约失败，请重试';

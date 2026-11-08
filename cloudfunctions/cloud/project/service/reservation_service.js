@@ -8,7 +8,6 @@ const StudentSlotLockModel = require('../model/student_slot_lock_model.js');
 const VenueModel = require('../model/venue_model.js');
 const TimeSlotModel = require('../model/time_slot_model.js');
 const ConfigModel = require('../model/config_model.js');
-const CaptchaService = require('./captcha_service.js');
 const dbUtil = require('../../framework/database/db_util.js');
 const config = require('../../config/config.js');
 const timeUtil = require('../../framework/utils/time_util.js');
@@ -23,7 +22,11 @@ class ReservationService extends BaseService {
 
     const where = venue_type ? { venue_type: venue_type } : {};
     const venues = await VenueModel.getAll(where, '*', { court_no: 'asc' });
-    const bookings = await ReservationModel.getAll({ date: date, slot_key: slot_key, status: 'pending' }, 'venue_key');
+    // M-5：占用统计须含 checked_in（签到后占用文档 status 变 checked_in，只数 pending 会误显示「可预约」）
+    const bookings = await ReservationModel.getAll(
+      { date: date, slot_key: slot_key, status: ['in', ['pending', 'checked_in']] },
+      'venue_key'
+    );
     const bookedSet = {};
     bookings.forEach((b) => { bookedSet[b.venue_key] = true; });
 
@@ -43,14 +46,14 @@ class ReservationService extends BaseService {
     });
   }
 
-  /** 提交预约（事务 + 唯一键冲突映射 + 人机验证码校验） */
-  async create(openId, user, { date, slot_key, venue_key, captcha_token, captcha_answer }) {
+  /** 提交预约（事务 + 唯一键冲突映射；防脚本由 application 层窗口限流兜底，无需人机验证码） */
+  async create(openId, user, { date, slot_key, venue_key }) {
     if (!user || !user.info_completed) this.AppError('请先完善个人信息', appCode.NO_PROFILE);
     const now = timeUtil.now();
 
     // 被拉黑校验（中间件已拦截，此处兜底）
     if (user.black_until && user.black_until > now) {
-      const days = Math.ceil((user.black_until - now) / 86400000);
+      const days = Math.ceil((user.black_until - now) / config.DAY_MS);
       this.AppError('您已被限制预约，' + days + ' 天内不可预约场馆', appCode.BLACKLIST, { black_days: days });
     }
 
@@ -96,9 +99,6 @@ class ReservationService extends BaseService {
     if (existing.some((r) => r.venue_key && r.venue_key !== venue_key)) {
       this.AppError('您在该时段已预约其他场地', appCode.DUPLICATE_SLOT);
     }
-
-    // 人机验证码校验（防脚本抢预约）：所有轻量预检通过后、真正提交前一次性消费验证码
-    await new CaptchaService().verify(openId, captcha_token, captcha_answer);
 
     const resId = date + '_' + slot_key + '_' + venue_key;
     const resData = {
@@ -216,26 +216,29 @@ class ReservationService extends BaseService {
   async cancel(openId, { res_id }) {
     const res = await ReservationModel.getOne(res_id);
     if (!res || res.student_openid !== openId) this.AppError('预约不存在', appCode.LOGIC);
+    // M-6：显式状态守卫，仅待签到可取消（防御签到后取消等状态机打穿）
+    if (res.status !== 'pending') this.AppError('当前状态不可取消', appCode.LOGIC);
 
     const si = timeUtil.parseSlotKey(res.slot_key);
     const startTs = timeUtil.dateMinuteToTimestamp(res.date, si.start_min);
     const now = timeUtil.now();
-    if (now >= startTs - 30 * 60 * 1000) {
-      this.AppError('场次开始前 30 分钟内不可取消', appCode.CANCEL_TOO_LATE);
+    if (now >= startTs - config.CANCEL_BEFORE_MIN * 60 * 1000) {
+      this.AppError('场次开始前 ' + config.CANCEL_BEFORE_MIN + ' 分钟内不可取消', appCode.CANCEL_TOO_LATE);
     }
 
+    // M-6：流水更新移入事务内，保证「删占用 + 删锁 + 流水置 cancelled」原子一致
+    const rec = await ReservationRecordModel.getOne({ res_id: res_id, status: 'pending' });
     await dbUtil.runTransaction(async (t) => {
       // 事务内同时删除占用表 + 学生时段锁，立即释放场地（关键：保证他人可再约、本人可再约同时段其他场地）
       await t.collection(config.COLLECTION.reservations).doc(res_id).remove();
       await t.collection(config.COLLECTION.student_slot_locks)
         .doc(StudentSlotLockModel.key(openId, res.date, res.slot_key)).remove();
+      if (rec) {
+        await t.collection(config.COLLECTION.reservation_records).doc(rec._id).update({
+          data: { status: 'cancelled', cancel_time: now, update_time: now },
+        });
+      }
     });
-
-    // 流水表更新移到事务外（事务外 where 合法；失败可由 job/expire 兜底）
-    await ReservationRecordModel.edit(
-      { res_id: res_id, status: 'pending' },
-      { status: 'cancelled', cancel_time: now, update_time: now }
-    );
 
     return { cancelled: true };
   }

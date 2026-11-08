@@ -10,13 +10,14 @@ const dbUtil = require('../database/db_util.js');
 const UserModel = require('../../project/model/user_model.js');
 const timeUtil = require('../utils/time_util.js');
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+// 天毫秒常量统一走 config.DAY_MS（L-7）
 
 async function app(event, context) {
   event = event || {};
 
-  // 定时触发器：按触发器名称分发到 job
-  if (event.Type === 'Timer' || event.triggerType === 'timer' || event.TriggerName) {
+  // 定时触发器：仅认腾讯云定时触发器注入的 Type==='Timer'（M-2 修复：
+  // 删除 triggerType / TriggerName 宽松分支，防止 callFunction 伪造触发字段绕过 job_secret）
+  if (event.Type === 'Timer') {
     return await runTimerJob(event);
   }
 
@@ -32,7 +33,7 @@ async function app(event, context) {
 
     // 初始化脚本（密钥保护，仅部署时手动调用）
     if (route === 'init/run') {
-      if (event.job_secret !== config.JOB_SECRET) {
+      if (!config.JOB_SECRET || event.job_secret !== config.JOB_SECRET) {
         throw new AppError('无权限', appCode.NO_RIGHT);
       }
       const initData = require('../../project/init/init_data.js');
@@ -40,9 +41,12 @@ async function app(event, context) {
       return appUtil.handlerData(result);
     }
 
-    // 云端冒烟测试（密钥保护，仅部署/排查时手动调用）
+    // 云端冒烟测试（密钥保护 + 环境开关，仅部署/排查时手动调用；H-5 修复：默认关闭）
     if (route === 'smoke/run') {
-      if (event.job_secret !== config.JOB_SECRET) {
+      if (process.env.ENABLE_SMOKE !== '1') {
+        throw new AppError('无权限', appCode.NO_RIGHT);
+      }
+      if (!config.JOB_SECRET || event.job_secret !== config.JOB_SECRET) {
         throw new AppError('无权限', appCode.NO_RIGHT);
       }
       const SmokeService = require('../../project/service/smoke_service.js');
@@ -67,7 +71,7 @@ async function app(event, context) {
     const isJobRoute = route.indexOf('job/') === 0;
 
     // job 手动调用需密钥；定时器已在入口处理
-    if (isJobRoute && event.job_secret !== config.JOB_SECRET) {
+    if (isJobRoute && (!config.JOB_SECRET || event.job_secret !== config.JOB_SECRET)) {
       throw new AppError('无权限', appCode.NO_RIGHT);
     }
 
@@ -88,15 +92,15 @@ async function app(event, context) {
       }
       // 黑名单拦截（预约/二维码类）
       if (user && user.black_until && user.black_until > timeUtil.now() && isBlockedRoute(route)) {
-        const days = Math.ceil((user.black_until - timeUtil.now()) / DAY_MS);
+        const days = Math.ceil((user.black_until - timeUtil.now()) / config.DAY_MS);
         throw new AppError('您已被限制预约，' + days + ' 天内不可预约场馆', appCode.BLACKLIST, { black_days: days });
       }
     }
 
     // 通用写接口限流（防脚本高频刷）：鉴权通过后、执行前，按 RATE_LIMIT 配置做窗口冷却
     if (!isJobRoute && openId && config.RATE_LIMIT && config.RATE_LIMIT[route]) {
-      const CaptchaService = require('../../project/service/captcha_service.js');
-      await new CaptchaService().checkRateLimit(openId, route);
+      const RateLimitService = require('../../project/service/rate_limit_service.js');
+      await new RateLimitService().checkRateLimit(openId, route);
     }
 
     // 实例化 controller 并调用 action

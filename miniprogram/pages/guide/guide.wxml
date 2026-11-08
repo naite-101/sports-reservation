@@ -1,28 +1,58 @@
 <view class="container">
+  <!-- 馆内预约须知 -->
   <view class="card">
     <view class="card-title card-title--icon">
-      <line-icon custom-class="title-icon" name="clock" size="32rpx" />场次安排
+      <line-icon custom-class="title-icon" name="rules" size="32rpx" />馆内预约须知
     </view>
-    <view class="rule">周一至周五：18:20~19:30、19:40~20:50</view>
-    <view class="rule">周六至周日：13:00 起每 70 分钟一场，共 6 场</view>
+    <view class="rule">1. 每日 21:00 前预约当天场次，21:00 后预约次日场次；提前一分钟（20:59）可进入「快速抢场」页面，21:01 前结束抢场。更多抢场规则见下方《预排队制须知》。</view>
+    <view class="rule">2. 因假期、比赛、场地借用导致闭馆再开时，预约时间统一为 21:30。</view>
+    <view class="rule">3. 预约即预约整个场地，请确保乒乓球和羽毛球人数合理（大于 1 人）；乒乓球场地最大入场 4 人，羽毛球场地最大入场 6 人。</view>
+    <view class="rule rule-highlight">4. 开场前 1 小时后无法退场；开场后预约无法退场；开场后超 10 分钟无法退场；开场前预约、于开场时到开场后 10 分钟之间退场者，允许退场并拉黑 7 天。</view>
+    <view class="rule">5. 预约者入场时在前台出示「个人二维码」，工作人员扫码后完成签到。</view>
+    <view class="rule">6. 随预约者一同参加羽毛球/乒乓球运动的同学为附属人员，入场也需出示「个人二维码」并告知前台预约者的场次号。</view>
+    <view class="rule rule-highlight">7. 场次开始后 10 分钟内未签到，场地可被其他同学再次预约：若被再约则立即清除你的预约记录并拉黑 10 天；若无人再约则可能被管理员拉黑 30 天，请尽快签到。</view>
+    <view class="rule">8. 抢场失败且仍想预约，可留意开场 10 分钟后是否有可用场次，见下方《预约时间表》。</view>
+    <view class="rule">9. 每人每天只能参加相同馆类一次，计次含预约数量与参与的附属人员数量。</view>
+    <view class="rule">10. 提前离场需告知工作人员，由工作人员安排退场，方便其他同学再次使用。</view>
   </view>
 
+  <!-- 馆内规章制度 -->
   <view class="card">
     <view class="card-title card-title--icon">
-      <line-icon custom-class="title-icon" name="rules" size="32rpx" />预约规则
+      <line-icon custom-class="title-icon" name="ban" size="32rpx" />馆内规章制度
     </view>
-    <view class="rule">1. 每天 21:00 前预约当天场次，21:00 后开放次日场次，先到先得，免费预约。</view>
-    <view class="rule">2. 同一学生同一时间窗（跨场馆）仅可预约 1 个场地。</view>
-    <view class="rule rule-highlight">3. 场次开始前 30 分钟可自主取消，取消后场地立即释放。</view>
-    <view class="rule">4. 到场请出示个人动态二维码（每 20 秒刷新），由管理员扫码签到。</view>
-    <view class="rule rule-highlight">5. 场次结束未签到视为爽约，系统自动拉黑 10 天。</view>
+    <view class="rule">1. 入场请带好学生证，不带禁止入场。</view>
+    <view class="rule">2. 严禁穿拖鞋入场，违者拉黑。</view>
+    <view class="rule">3. 换场时间内不服从值班同学劝告、未在规定时间退卡的，拉黑 30 天。</view>
+    <view class="rule">4. 禁止含糖饮料入馆，只允许矿泉水、纯净水等非调制饮品，违者拉黑 30 天。</view>
+    <view class="rule">5. 馆内任何地点禁止抽烟，违者拉黑 30 天。</view>
+    <view class="rule">6. 入场需排队登记，配合值班同学出示卡牌、按登记本号码入场；不排队登记直接闯入或登记不认真者拉黑。放置个人物品需登记完毕后再入场。</view>
+    <view class="rule">7. 最终解释权归体育馆管理中心所有。</view>
   </view>
 
-  <view class="card checkin-card">
+  <!-- 预排队制须知 -->
+  <view class="card">
     <view class="card-title card-title--icon">
-      <line-icon custom-class="title-icon" name="checkin" size="32rpx" />签到说明
+      <line-icon custom-class="title-icon" name="clock" size="32rpx" />预排队制须知
     </view>
-    <view class="rule">签到窗口：场次开始前 15 分钟至场次结束。</view>
-    <view class="rule">请携带本人二维码到场，可登记附属人员（非系统用户）。</view>
+    <view class="rule">1. 21:00~21:01 为预约高峰，此间不当场出结果，而是将你加入预排队列，1 分钟后系统统一处理。</view>
+    <view class="rule">2. 高峰期前一分钟（20:59）可进入「快速抢场」页面，倒计时结束后抢场。</view>
+    <view class="rule">3. 倒计时以服务器时间为准，不同设备因网速/网络波动会有毫秒级差异，建议保持网络通畅。</view>
+    <view class="rule">4. 系统于 21:01~21:02 完成队列处理，期间不可预约，可在「我的」页下拉刷新查看结果。</view>
+    <view class="rule">5. 只有「我的」页显示预约结果才算抢场成功，否则失败。</view>
+    <view class="rule">6. 除高峰时段外，其他时段均当场给出预约结果。</view>
+    <view class="rule">7. 系统以服务器标准中国区时间为准，本地时间可能有秒级差异，以服务器时间为准。</view>
+  </view>
+
+  <!-- 预约时间表 -->
+  <view class="card">
+    <view class="card-title card-title--icon">
+      <line-icon custom-class="title-icon" name="calendar" size="32rpx" />预约时间表
+    </view>
+    <view class="table-group">
+      <view class="table-title">所有场馆（羽毛球 / 乒乓球 / 健身房）</view>
+      <view class="rule">周一至周五：18:20~19:30、19:40~20:50（共 2 场）</view>
+      <view class="rule">周六至周日：13:00~14:10、14:20~15:30、15:40~16:50、17:00~18:10、18:20~19:30、19:40~20:50（共 6 场）</view>
+    </view>
   </view>
 </view>

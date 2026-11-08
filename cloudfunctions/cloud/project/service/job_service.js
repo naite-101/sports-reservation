@@ -5,6 +5,7 @@ const BaseService = require('./base_service.js');
 const ReservationRecordModel = require('../model/reservation_record_model.js');
 const ReservationModel = require('../model/reservation_model.js');
 const StudentSlotLockModel = require('../model/student_slot_lock_model.js');
+const AntiAbuseModel = require('../model/anti_abuse_model.js');
 const BlacklistService = require('./blacklist_service.js');
 const MessageService = require('./message_service.js');
 const timeUtil = require('../../framework/utils/time_util.js');
@@ -58,7 +59,60 @@ class JobService extends BaseService {
     // 黑名单到期自动解除
     const released = await blacklistService.releaseExpired();
 
-    return { processed: processed, released_blacklist: released, scan_up_to: today };
+    // M-9：孤儿锁清扫——锁对应流水已取消/过期（或流水不存在）时释放，
+    //      避免学生该时段永久 4101「已预约其他场地」。
+    //      注意：checked_in 的锁须等场次结束再清（签到窗口早于开场 15 分钟，
+    //      此窗口内 create 仍放行，提前清锁会导致同场次重复预约）。
+    const orphanLocks = await StudentSlotLockModel.getAll({}, '*', { create_time: 'asc' });
+    let locksCleaned = 0;
+    for (const lk of orphanLocks) {
+      try {
+        const rec = await ReservationRecordModel.getOne({ res_id: lk.res_id });
+        let orphan = false;
+        if (!rec || rec.status === 'cancelled' || rec.status === 'expired') {
+          orphan = true;
+        } else if (rec.status === 'pending') {
+          // 流水仍待签到但占用文档已丢失（极端残留）：锁失去意义，一并清扫
+          const resDoc = await ReservationModel.getOne(lk.res_id);
+          orphan = !resDoc;
+        } else if (rec.status === 'checked_in') {
+          const si = timeUtil.parseSlotKey(rec.slot_key);
+          const endTs = si ? timeUtil.dateMinuteToTimestamp(rec.date, si.end_min) : 0;
+          orphan = !endTs || now > endTs;
+        }
+        if (orphan) {
+          await StudentSlotLockModel.del(lk._id);
+          locksCleaned++;
+        }
+      } catch (e) {
+        console.error('[expire] 孤儿锁清扫失败 lock_id=' + lk._id, e);
+      }
+    }
+
+    // L-4：清理已完成生命周期的 checked_in 占用文档（日期<=昨天；流水保留不动），避免占用表只增不减
+    const yesterday = timeUtil.today(); // 占用只服务「当天/次日」预约，date<今天即无展示价值
+    let staleCleaned = 0;
+    try {
+      staleCleaned = await ReservationModel.del({ status: 'checked_in', date: ['<', yesterday] });
+    } catch (e) {
+      console.error('[expire] 过期占用清理失败', e);
+    }
+
+    // L-2：清理过期限流记录，防止 anti_abuse 集合无限膨胀
+    const dayAgo = now - config.DAY_MS;
+    try {
+      await AntiAbuseModel.del({ create_time: ['<', dayAgo] });
+    } catch (e) {
+      console.error('[expire] 限流记录清理失败', e);
+    }
+
+    return {
+      processed: processed,
+      released_blacklist: released,
+      locks_cleaned: locksCleaned,
+      stale_reservations_cleaned: staleCleaned,
+      scan_up_to: today,
+    };
   }
 
   /**

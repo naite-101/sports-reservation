@@ -1,4 +1,4 @@
-/* 预约须知：三卡片 + 浅橙重点 + 浅绿签到区分 */
+/* 预约须知：四部分（馆内预约须知 / 规章制度 / 预排队制 / 时间表）+ 浅橙重点 */
 
 .rule {
   font-size: 28rpx;
@@ -16,11 +16,6 @@
   margin-bottom: 16rpx;
 }
 
-/* 签到说明卡片：浅绿底做区分 */
-.checkin-card {
-  background: #eaf6fd;
-}
-
 /* 卡片标题内图标留白 */
 .card-title--icon {
   display: flex;
@@ -29,4 +24,18 @@
 
 .title-icon {
   margin-right: 10rpx;
+}
+
+/* 时间表分组 */
+.table-group {
+  margin-bottom: 20rpx;
+}
+.table-group:last-child {
+  margin-bottom: 0;
+}
+.table-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8rpx;
 }

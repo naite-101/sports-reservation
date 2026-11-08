@@ -15,10 +15,10 @@ const config = require(path.join(CF, 'config/config.js'));
 const timeUtil = require(path.join(CF, 'framework/utils/time_util.js'));
 const appCode = require(path.join(CF, 'framework/core/app_code.js'));
 const ReservationService = require(path.join(CF, 'project/service/reservation_service.js'));
-const CaptchaService = require(path.join(CF, 'project/service/captcha_service.js'));
 const VenueService = require(path.join(CF, 'project/service/venue_service.js'));
 const JobService = require(path.join(CF, 'project/service/job_service.js'));
 const HrService = require(path.join(CF, 'project/service/hr_service.js'));
+const BlacklistService = require(path.join(CF, 'project/service/blacklist_service.js'));
 const initData = require(path.join(CF, 'project/init/init_data.js'));
 const application = require(path.join(CF, 'framework/core/application.js'));
 
@@ -96,26 +96,9 @@ function userOf(id) {
   return mock.dump(config.COLLECTION.users).find((u) => u._id === id);
 }
 
-/** 解析验证码题目得到正确答案（预约前需自动答对验证码） */
-function solveCaptcha(q) {
-  const m = /^(\d+)\s*([+\-×])\s*(\d+)\s*=\s*\?$/.exec(String(q).trim());
-  if (!m) return '';
-  const a = Number(m[1]);
-  const b = Number(m[3]);
-  if (m[2] === '+') return String(a + b);
-  if (m[2] === '-') return String(a - b);
-  if (m[2] === '×') return String(a * b);
-  return '';
-}
-
-/** 预约：自动获取并答对验证码（预约接口已接入人机校验） */
+/** 预约：直接提交（防脚本已改为纯服务端窗口限流，预约无需验证码） */
 async function book(openid, opts) {
-  const cap = await new CaptchaService().issue(openid);
-  const withCaptcha = Object.assign({}, opts, {
-    captcha_token: cap.token,
-    captcha_answer: solveCaptcha(cap.question),
-  });
-  return new ReservationService().create(openid, userOf(openid), withCaptcha);
+  return new ReservationService().create(openid, userOf(openid), opts);
 }
 
 async function expectOk(fn, label) {
@@ -462,4 +445,90 @@ t('initVenues 幂等补齐缺失场馆（已有部分场馆时重跑仍能补出
   const b1 = mock.dump(config.COLLECTION.venues).find((v) => v.venue_key === 'badminton#1');
   assertEqual(b1.closed, true, '已存在场地的 closed 状态应保留');
   assertEqual(b1.closed_until, 9999999999999, '已存在场地的 closed_until 应保留');
+});
+
+/* ================= 8. 黑名单权限 + M1 密钥 + M3 拉黑时长 ================= */
+t('拉黑权限：超管与人事管理员可拉黑，普通管理员/学生不可', async () => {
+  seedBase();
+  const mk = (id, role, name) => mock.seed(config.COLLECTION.users, {
+    _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
+  });
+  mk('sa_1', config.ROLE.SUPER_ADMIN, '赵超管');
+  mk('hr_1', config.ROLE.HR_ADMIN, '王人事');
+
+  mock.setOpenId('sa_1');
+  const r1 = await application.app({ route: 'blacklist/add', student_openid: 'stu_A', duration_days: 3, reason: '测试' }, {});
+  assertEqual(r1.code, 200, '超管拉黑应成功');
+
+  mock.setOpenId('hr_1');
+  const r2 = await application.app({ route: 'blacklist/add', student_openid: 'stu_B', duration_days: 5, reason: '测试' }, {});
+  assertEqual(r2.code, 200, '人事管理员拉黑应成功');
+
+  mock.setOpenId('adm_1');
+  const r3 = await application.app({ route: 'blacklist/add', student_openid: 'stu_A', duration_days: 1, reason: '测试' }, {});
+  assertEqual(r3.code, appCode.NO_RIGHT, '普通管理员拉黑应被拒');
+
+  mock.setOpenId('stu_A');
+  const r4 = await application.app({ route: 'blacklist/add', student_openid: 'stu_B', duration_days: 1, reason: '测试' }, {});
+  assertEqual(r4.code, appCode.NO_RIGHT, '学生拉黑应被拒');
+});
+
+t('解除黑名单：超管与人事管理员均可（人事拥有超管全部权限）', async () => {
+  seedBase();
+  const mk = (id, role, name) => mock.seed(config.COLLECTION.users, {
+    _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
+  });
+  mk('sa_1', config.ROLE.SUPER_ADMIN, '赵超管');
+  mk('hr_1', config.ROLE.HR_ADMIN, '王人事');
+  const svc = new BlacklistService();
+
+  await expectOk(() => svc.add(userOf('sa_1'), { student_openid: 'stu_A', duration_days: 3, reason: '测试' }), '超管拉黑');
+  const bl = mock.dump(config.COLLECTION.blacklist)[0];
+
+  await expectOk(() => svc.release(userOf('hr_1'), { blacklist_id: bl._id, reason: '测试' }), '人事管理员解除黑名单');
+  assertEqual(mock.dump(config.COLLECTION.blacklist)[0].status, 'released', '人事管理员解除后应为 released');
+});
+
+t('M1：JOB_SECRET 未配置时，空 secret 也不放行（环境变量修复）', async () => {
+  seedBase();
+  mock.setOpenId('');
+  const saved = config.JOB_SECRET;
+  config.JOB_SECRET = '';
+  try {
+    const res = await application.app({ route: 'job/expire', job_secret: '' }, {});
+    assertEqual(res.code, appCode.NO_RIGHT, '未配置密钥时应拒绝（不能因空==空放行）');
+  } finally {
+    config.JOB_SECRET = saved;
+  }
+});
+
+t('M1：配置 JOB_SECRET 后，正确密钥可调用 job/expire', async () => {
+  seedBase();
+  mock.setOpenId('');
+  const saved = config.JOB_SECRET;
+  config.JOB_SECRET = 'test-secret-2026';
+  try {
+    const res = await application.app({ route: 'job/expire', job_secret: 'test-secret-2026' }, {});
+    assertEqual(res.code, 200, '正确密钥应放行');
+  } finally {
+    config.JOB_SECRET = saved;
+  }
+});
+
+t('M3：手动拉黑时长自定义，爽约自动拉黑固定 10 天', async () => {
+  seedBase();
+  const mk = (id, role, name) => mock.seed(config.COLLECTION.users, {
+    _id: id, openid: id, role: role, name: name, status: 1, black_until: 0,
+  });
+  mk('sa_1', config.ROLE.SUPER_ADMIN, '赵超管');
+  const svc = new BlacklistService();
+
+  await expectOk(() => svc.add(userOf('sa_1'), { student_openid: 'stu_A', duration_days: 3, reason: '测试' }), '手动拉黑3天');
+  const manual = mock.dump(config.COLLECTION.blacklist).filter((b) => b.channel === 'manual')[0];
+  assertEqual(manual.duration_days, 3, '手动拉黑时长应为自定义 3 天');
+
+  await expectOk(() => svc.applyAutoBlacklist('stu_B', '李四'), '爽约自动拉黑');
+  const auto = mock.dump(config.COLLECTION.blacklist).filter((b) => b.channel === 'auto')[0];
+  assertEqual(auto.duration_days, config.AUTO_BLACK_DAYS, '爽约自动拉黑应为固定天数');
+  assertEqual(auto.duration_days, 10, '爽约固定天数应为 10 天');
 });

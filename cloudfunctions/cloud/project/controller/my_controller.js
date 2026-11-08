@@ -31,7 +31,7 @@ class MyController extends BaseController {
             // 场次已结束仍未签到：按「爽约」展示（真正落库翻转由 job/expire 兜底）
             status = 'expired';
           } else {
-            cancelable = now < startTs - 30 * 60 * 1000;
+            cancelable = now < startTs - config.CANCEL_BEFORE_MIN * 60 * 1000;
           }
         }
       }
@@ -85,36 +85,36 @@ class MyController extends BaseController {
     };
   }
 
-  /** 预约统计（口径：排除已取消；爽约 = 已 expired，或仍 pending 但场次已结束） */
+  /** 预约统计（口径：排除已取消；爽约 = 已 expired，或仍 pending 但场次已结束）
+   *  L-3：不再「取最近 1000 条遍历」，改为 count 聚合 + 仅扫描未决 pending 小集合，数据多后口径不失真 */
   async stats() {
     const now = timeUtil.now();
     const todayStr = timeUtil.today();
     const monthStart = timeUtil.dateStartTimestamp(todayStr.slice(0, 7) + '-01');
+    const activeStatuses = ['in', ['pending', 'checked_in', 'expired']];
 
-    const list = await ReservationRecordModel.getAll(
-      { student_openid: this._openId },
-      '*',
-      { create_time: 'desc' },
-      1000
+    // 总次数 / 本月次数：count 聚合，全量口径
+    const total_count = await ReservationRecordModel.count(
+      { student_openid: this._openId, status: activeStatuses }
+    );
+    const month_count = await ReservationRecordModel.count(
+      { student_openid: this._openId, status: activeStatuses, create_time: ['>=', monthStart] }
     );
 
-    let total_count = 0;
-    let month_count = 0;
-    let no_show_count = 0;
-    for (const r of list) {
-      if (r.status === 'cancelled') continue;
-      total_count++;
-      if ((r.create_time || 0) >= monthStart) month_count++;
-
-      if (r.status === 'expired') {
-        no_show_count++;
-      } else if (r.status === 'pending') {
-        const si = timeUtil.parseSlotKey(r.slot_key);
-        if (si) {
-          const endTs = timeUtil.dateMinuteToTimestamp(r.date, si.end_min);
-          if (now > endTs) no_show_count++;
-        }
-      }
+    // 爽约 = 已 expired（count）+ 仍 pending 但场次已结束（按人扫 pending 小集合判定）
+    const expired_count = await ReservationRecordModel.count(
+      { student_openid: this._openId, status: 'expired' }
+    );
+    const pendings = await ReservationRecordModel.getAll(
+      { student_openid: this._openId, status: 'pending', date: ['<=', todayStr] },
+      'date,slot_key'
+    );
+    let no_show_count = expired_count;
+    for (const r of pendings) {
+      const si = timeUtil.parseSlotKey(r.slot_key);
+      if (!si) continue;
+      const endTs = timeUtil.dateMinuteToTimestamp(r.date, si.end_min);
+      if (now > endTs) no_show_count++;
     }
     return { total_count: total_count, month_count: month_count, no_show_count: no_show_count };
   }

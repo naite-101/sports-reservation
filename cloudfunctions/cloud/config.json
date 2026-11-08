@@ -9,7 +9,7 @@
     {
       "name": "gymreserve-expire",
       "type": "timer",
-      "config": "0 0 * * * * *"
+      "config": "0 */10 * * * * *"
     },
     {
       "name": "gymreserve-notify",

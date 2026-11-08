@@ -164,6 +164,10 @@ class HrService extends BaseService {
   async studentDetail(openid) {
     const user = await UserModel.getOne(openid);
     if (!user) this.AppError('用户不存在', appCode.LOGIC);
+    // L-8：与 studentEdit 对齐——超管/人事管理员的 PII（手机号等）不在本入口暴露
+    if (Number(user.role) >= config.ROLE.SUPER_ADMIN) {
+      this.AppError('仅可查看学生或普通管理员的信息', appCode.NO_RIGHT);
+    }
     return user;
   }
 

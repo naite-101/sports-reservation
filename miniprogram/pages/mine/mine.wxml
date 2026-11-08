@@ -1,5 +1,15 @@
 <view class="container">
-  <view class="card profile-card">
+  <!-- 顶部个人信息卡：接口未返回时显示骨架，消除 user=null 布局塌陷抖动 -->
+  <view class="card profile-card" wx:if="{{!loaded}}">
+    <view class="row profile-head">
+      <view class="skeleton-circle"></view>
+      <view class="profile-info">
+        <view class="skeleton-line skeleton-line--long"></view>
+        <view class="skeleton-line skeleton-line--short"></view>
+      </view>
+    </view>
+  </view>
+  <view class="card profile-card" wx:else>
     <view class="row profile-head">
       <view class="avatar">
         <line-icon name="user" size="56rpx" />
@@ -17,7 +27,12 @@
     </view>
   </view>
 
-  <view class="card stats-card" hover-class="stats-card--hover" bind:tap="goReservations">
+  <!-- 预约统计卡：加载中显示骨架占位 -->
+  <view class="card stats-card" wx:if="{{!loaded}}">
+    <view class="skeleton-line skeleton-line--short"></view>
+    <view class="skeleton-line"></view>
+  </view>
+  <view class="card stats-card" wx:else hover-class="stats-card--hover" bind:tap="goReservations">
     <view class="stats-grid">
       <view class="stats-item">
         <view class="stats-num">{{stats.total_count}}</view>
@@ -36,7 +51,7 @@
   </view>
 
   <t-notice-bar
-    wx:if="{{blackDays > 0}}"
+    wx:if="{{loaded && blackDays > 0}}"
     visible="{{true}}"
     theme="error"
     t-class="notice-banner"
@@ -77,7 +92,7 @@
     </view>
   </view>
 
-  <view class="admin-card" wx:if="{{role >= 2}}" hover-class="admin-card--hover" bind:tap="goAdmin">
+  <view class="admin-card" wx:if="{{loaded && role >= 2}}" hover-class="admin-card--hover" bind:tap="goAdmin">
     <line-icon custom-class="admin-icon" name="tool" size="44rpx" />
     <view class="admin-text">
       <view class="admin-title">管理后台</view>

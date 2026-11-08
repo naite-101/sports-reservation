@@ -31,11 +31,17 @@ class NoticeService extends BaseService {
     return res;
   }
 
-  /** 公告详情 */
+  /** 公告详情（L-6：裁剪内部字段，匿名可读接口不暴露 author_openid/status） */
   async detail(id) {
     const n = await NoticeModel.getOne(id);
     if (!n || n.status === 'deleted') this.AppError('公告不存在或已删除', appCode.LOGIC);
-    return n;
+    return {
+      _id: n._id,
+      title: n.title || '',
+      content: n.content || '',
+      author_name: n.author_name || '',
+      publish_time: n.publish_time || 0,
+    };
   }
 
   /** 标记公告已读（幂等：重复标记静默成功；并发下依靠 duplicate 兜底） */
@@ -83,7 +89,7 @@ class NoticeService extends BaseService {
   /** 发布公告 */
   async add(operator, { title, content }) {
     const now = timeUtil.now();
-    await NoticeModel.insert({
+    const inserted = await NoticeModel.insert({
       title: title,
       content: content,
       status: 'published',
@@ -91,6 +97,17 @@ class NoticeService extends BaseService {
       author_name: operator.name || '',
       publish_time: now,
       update_time: now,
+    });
+    // L-1：与 edit/remove 对齐，发布也写操作日志，保证审计链完整
+    await OperationLogModel.insert({
+      module: 'notice',
+      action: 'add_notice',
+      operator_openid: operator._id,
+      operator_name: operator.name || '',
+      operator_role: operator.role,
+      target_desc: String(inserted || ''),
+      detail: { title: title },
+      create_time: now,
     });
     return { added: true };
   }

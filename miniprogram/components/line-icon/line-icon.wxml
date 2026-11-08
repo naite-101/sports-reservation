@@ -1,6 +1,6 @@
 <image
   class="line-icon custom-class"
   style="width: {{size}}; height: {{size}};"
-  src="/images/icons/{{name}}.svg"
+  src="/images/icons/{{name}}.{{ext}}"
   mode="aspectFit"
 />

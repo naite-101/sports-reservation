@@ -88,8 +88,8 @@
       bind:tap="onTapVenue"
     >
       <view class="venue-icon">
-        <line-icon wx:if="{{item.venue_type === 'badminton'}}" name="badminton" size="64rpx" />
-        <line-icon wx:elif="{{item.venue_type === 'pingpong'}}" name="pingpong" size="64rpx" />
+        <line-icon wx:if="{{item.venue_type === 'badminton'}}" name="badminton" ext="png" size="64rpx" />
+        <line-icon wx:elif="{{item.venue_type === 'pingpong'}}" name="pingpong" ext="png" size="64rpx" />
         <line-icon wx:elif="{{item.venue_type === 'gym'}}" name="gym" size="64rpx" />
         <line-icon wx:else name="venue" size="64rpx" />
       </view>

@@ -1,29 +1,43 @@
 <view class="container">
-  <view class="lock-tip" wx:if="{{locked}}">
-    <line-icon name="ban" size="32rpx" />
-    <text>个人信息已锁定，如需修改请联系管理员</text>
+  <!-- 骨架占位：ready=false（确认渲染前）时显示，避免异步接口返回前表单闪现/空白 -->
+  <view class="skeleton" wx:if="{{!ready}}">
+    <view class="skeleton-card">
+      <view class="skeleton-line skeleton-line--long"></view>
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line"></view>
+    </view>
   </view>
-  <view class="card">
-    <view class="form-item">
-      <view class="form-label">姓名</view>
-      <input class="form-input" value="{{name}}" data-field="name" bindinput="onInput" placeholder="请输入真实姓名" disabled="{{locked}}" />
-      <view class="form-tip">请填写真实姓名，用于签到核验与责任追溯</view>
+
+  <!-- 表单内容：后端确认后（ready=true）才渲染 -->
+  <block wx:else>
+    <view class="lock-tip" wx:if="{{locked}}">
+      <line-icon name="ban" size="32rpx" />
+      <text>个人信息已锁定，如需修改请联系管理员</text>
     </view>
-    <view class="form-item">
-      <view class="form-label">学号</view>
-      <input class="form-input" value="{{student_no}}" data-field="student_no" bindinput="onInput" placeholder="请输入学号" disabled="{{locked}}" />
-      <view class="form-tip">请输入完整学号（11 位或 8 位），无学号请填"访客"二字</view>
+    <view class="card">
+      <view class="form-item">
+        <view class="form-label">姓名</view>
+        <input class="form-input" value="{{name}}" data-field="name" bindinput="onInput" placeholder="请输入真实姓名" disabled="{{locked}}" />
+        <view class="form-tip">请填写真实姓名，用于签到核验与责任追溯</view>
+      </view>
+      <view class="form-item">
+        <view class="form-label">学号</view>
+        <input class="form-input" value="{{student_no}}" data-field="student_no" bindinput="onInput" placeholder="请输入学号" disabled="{{locked}}" />
+        <view class="form-tip">请输入完整学号（11 位或 8 位），无学号请填"访客"二字</view>
+      </view>
+      <view class="form-item">
+        <view class="form-label">手机号</view>
+        <input class="form-input" type="number" value="{{phone}}" data-field="phone" bindinput="onInput" placeholder="请输入手机号" disabled="{{locked}}" />
+        <view class="form-tip">请输入 11 位手机号，用于接收预约提醒</view>
+      </view>
+      <view class="form-item">
+        <view class="form-label">学院/单位</view>
+        <input class="form-input" value="{{college}}" data-field="college" bindinput="onInput" placeholder="请输入学院/单位" disabled="{{locked}}" />
+        <view class="form-tip">请填写所在学院或单位，访客可填"访客"</view>
+      </view>
+      <t-button wx:if="{{!locked}}" theme="primary" block="{{true}}" bind:tap="save">保存</t-button>
     </view>
-    <view class="form-item">
-      <view class="form-label">手机号</view>
-      <input class="form-input" type="number" value="{{phone}}" data-field="phone" bindinput="onInput" placeholder="请输入手机号" disabled="{{locked}}" />
-      <view class="form-tip">请输入 11 位手机号，用于接收预约提醒</view>
-    </view>
-    <view class="form-item">
-      <view class="form-label">学院/单位</view>
-      <input class="form-input" value="{{college}}" data-field="college" bindinput="onInput" placeholder="请输入学院/单位" disabled="{{locked}}" />
-      <view class="form-tip">请填写所在学院或单位，访客可填"访客"</view>
-    </view>
-    <t-button wx:if="{{!locked}}" theme="primary" block="{{true}}" bind:tap="save">保存</t-button>
-  </view>
+  </block>
 </view>

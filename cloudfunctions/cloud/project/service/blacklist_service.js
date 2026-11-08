@@ -27,7 +27,7 @@ class BlacklistService extends BaseService {
     if (!(days > 0)) this.AppError('拉黑时长必须大于 0 天', appCode.DATA);
 
     const now = timeUtil.now();
-    const endTime = now + days * 86400000;
+    const endTime = now + days * config.DAY_MS;
     await BlacklistModel.insert({
       student_openid: realOpenid,
       student_name: student.name || '',
@@ -91,7 +91,7 @@ class BlacklistService extends BaseService {
     return null;
   }
 
-  /** 解除拉黑（逻辑删除保留审计） */
+  /** 解除拉黑（逻辑删除保留审计）：超管(3)与人事管理员(4)均可（人事拥有超管全部权限）；普通管理员由 route 门槛拦截 */
   async release(operator, { blacklist_id, reason }) {
     const bl = await BlacklistModel.getOne(blacklist_id);
     if (!bl) this.AppError('黑名单记录不存在', appCode.LOGIC);
@@ -125,7 +125,7 @@ class BlacklistService extends BaseService {
   /** 爽约自动拉黑（固定 10 天；幂等由调用方保证） */
   async applyAutoBlacklist(studentOpenid, studentName) {
     const now = timeUtil.now();
-    const endTime = now + config.AUTO_BLACK_DAYS * 86400000;
+    const endTime = now + config.AUTO_BLACK_DAYS * config.DAY_MS;
     await BlacklistModel.insert({
       student_openid: studentOpenid,
       student_name: studentName || '',

@@ -77,9 +77,17 @@ class VenueService extends BaseService {
     const venue = await VenueModel.getOne(venue_key);
     if (!venue) this.AppError('场地不存在', appCode.LOGIC);
     const now = timeUtil.now();
+    // L-5：closed_until 边界校验（拒绝负数与非法时间戳）
+    let until = 0;
+    if (closed_until !== undefined && closed_until !== null && closed_until !== '') {
+      until = Number(closed_until);
+      if (!Number.isFinite(until) || until < 0) {
+        this.AppError('闭馆截止时间不合法', appCode.DATA);
+      }
+    }
     const data = {
       closed: !!closed,
-      closed_until: closed_until ? Number(closed_until) : 0,
+      closed_until: until,
       update_time: now,
     };
     await VenueModel.edit(venue_key, data);
@@ -103,7 +111,7 @@ class VenueService extends BaseService {
     return { venue_key: venue_key, closed: !!closed, cancelled_bookings: cancelled };
   }
 
-  /** 闭馆联动：取消某场地所有 pending 预约，释放实时占用表 */
+  /** 闭馆联动：取消某场地所有 pending 预约，释放实时占用表（M-9：删占用+删锁逐条事务化，防锁残留） */
   async cancelVenueBookings(venue_key, now) {
     const pendings = await ReservationModel.getAll(
       { venue_key: venue_key, status: 'pending' },
@@ -113,18 +121,21 @@ class VenueService extends BaseService {
     let cancelled = 0;
     for (const b of pendings) {
       try {
-        await dbUtil.getDb().collection(config.COLLECTION.reservations).doc(b._id).remove();
-        // 同步释放学生时段锁，避免锁残留导致学生无法再约同时段其他场地
-        await dbUtil.getDb().collection(config.COLLECTION.student_slot_locks)
-          .doc(StudentSlotLockModel.key(b.student_openid, b.date, b.slot_key)).remove();
+        // 事务内同时删占用 + 删学生时段锁：要么都删要么都不删，杜绝「占用没了锁还在」
+        await dbUtil.runTransaction(async (t) => {
+          await t.collection(config.COLLECTION.reservations).doc(b._id).remove();
+          await t.collection(config.COLLECTION.student_slot_locks)
+            .doc(StudentSlotLockModel.key(b.student_openid, b.date, b.slot_key)).remove();
+        });
+        const upd = await ReservationRecordModel.edit(
+          { res_id: b._id, status: 'pending' },
+          { status: 'cancelled', cancel_time: now, cancel_reason: 'venue_closed', update_time: now }
+        );
+        if (upd === 1) cancelled++;
       } catch (e) {
-        console.error('[venue_close] 释放占用失败 res_id=' + b._id, e);
+        // 失败不吞锁：记录待补偿（job/expire 的孤儿锁清扫会兜底释放残留锁）
+        console.error('[venue_close] 释放失败 res_id=' + b._id, e);
       }
-      const upd = await ReservationRecordModel.edit(
-        { res_id: b._id, status: 'pending' },
-        { status: 'cancelled', cancel_time: now, cancel_reason: 'venue_closed', update_time: now }
-      );
-      if (upd === 1) cancelled++;
     }
     return cancelled;
   }

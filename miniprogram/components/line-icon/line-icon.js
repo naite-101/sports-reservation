@@ -17,5 +17,10 @@ Component({
       type: String,
       value: '48rpx',
     },
+    /** 图标文件扩展名，默认 svg；位图图标用 png */
+    ext: {
+      type: String,
+      value: 'svg',
+    },
   },
 });

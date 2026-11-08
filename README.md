@@ -51,44 +51,39 @@ gymreserve/
 
 1. 点击工具栏「云开发」开通环境，记录环境 ID。
 2. 在 `cloudfunctions/cloud` 目录右键 →「上传并部署：云端安装依赖」。
-3. 部署完成后，右键云函数 `cloud` →「云端测试」，传入初始化参数并运行：
+3. 在云开发控制台 → 云函数 `cloud` → 配置 → 环境变量，新增 `JOB_SECRET`（值用一串强随机字符串，例如 `openssl rand -hex 24` 生成）。`init/run`、`job/*` 的手动调用都依赖它，未配置时这些入口一律拒绝。
+   - `smoke/run` 额外需要环境变量 `ENABLE_SMOKE=1` 才会放行（默认关闭，防止生产库被冒烟测试写删；排查完毕请删掉该变量）。
+   - HTTP 访问服务通道只放行只读接口（`notice/latest`、`notice/list`、`notice/detail`、`config/get`、`banner/list`），其余路由一律 403。外部压测请使用测试环境，勿在生产开 HTTP 写通道。
+4. 部署完成后，右键云函数 `cloud` →「云端测试」，传入初始化参数并运行：
 
 ```json
-{ "route": "init/run", "job_secret": "gymreserve-job-secret-2026" }
+{ "route": "init/run", "job_secret": "<JOB_SECRET>" }
 ```
 
-> 该脚本会自动创建 11 个集合、写入 32 个场馆、6 个场次模板、默认配置，并按 `INIT_ADMIN_OPENID` 创建/提升超级管理员。可重复执行（幂等）。**唯一索引例外，需手动创建，见第 5 步。**
+> `<JOB_SECRET>` 用你第 3 步配置的环境变量值替换。该脚本会自动创建 11 个集合、写入 32 个场馆、6 个场次模板、默认配置，并按 `INIT_ADMIN_OPENID` 创建/提升超级管理员。可重复执行（幂等）。防重复机制见第 5 步（锁表兜底，唯一索引为可选优化）。
 
-### 5. 预约防重复的组合唯一索引（⚠️ 需手动创建一次）
+### 5. 预约防重复机制（锁表兜底，唯一索引为可选优化）
 
-`reservations` 集合的 `_id` 已由 `日期_场次_场地` 组合主键保证「场地不超约」（天然唯一，无需额外建索引）；「同一学生同一时间窗跨场馆只约 1 个」由组合唯一索引 `uniq_student_slot`（`student_openid + date + slot_key`，唯一）保证。
+防超约/防重复由两层机制保证，**不依赖手动建索引**：
 
-> **该索引无法由 `init/run` 自动创建。** `wx-server-sdk` 的 `Collection` 实例并未提供 `createIndex` 方法（依赖链 `wx-server-sdk` → `@cloudbase/node-sdk` → `@cloudbase/database` 三层均未暴露该 API），初始化脚本检测不到该方法时会打印告警并跳过，因此**必须按下表在控制台手动建一次**。
+1. **场地不超约**：`reservations` 集合 `_id = 日期_场次_场地` 组合主键，天然唯一，同场地同场次只允许一条占用。
+2. **同一学生同一时间窗只约 1 个场地**：`student_slot_locks` 锁表 `_id = openid_日期_场次` 组合主键，预约事务内加锁、取消/闭馆/爽约三条路径释放锁（`job/expire` 另有孤儿锁清扫兜底）。
 
-在云开发控制台 → 数据库 → `reservations` 集合 → 索引管理 → 新建索引：
-
-| 索引字段 | 索引类型 | 是否唯一 |
-|---|---|---|
-| student_openid | 升序 | — |
-| date | 升序 | — |
-| slot_key | 升序 | — |
-
-- **索引名称**：`uniq_student_slot`
-- **唯一**：是
-
-> 若索引缺失，系统仍能保证「场地不超约」；`reservation_service.create` 内也做了一次「同一学生同时间窗是否已约其他场地」的查询兜底，所以 4101 依然会触发。但应用层「先查后插」存在并发竞态窗口，高并发下不如数据库唯一索引可靠。请在首次部署后到控制台确认索引列表中存在 `uniq_student_slot`。
+> 旧文档要求手动创建的 `reservations` 组合唯一索引 `uniq_student_slot`（`student_openid + date + slot_key`）**已降级为可选优化**——锁表主键已在数据库层原子拦截重复预约。若你想额外加一层保险，可在控制台 → 数据库 → `reservations` → 索引管理手动创建（名称 `uniq_student_slot`，三字段升序，唯一），缺失不影响正确性。
 
 ### 6. 定时触发器
 
-`cloudfunctions/cloud/config.json` 已声明两个定时触发器（部署云函数时自动生效）：
+`cloudfunctions/cloud/config.json` 已声明两个定时触发器：
 
-- `gymreserve-expire`：每小时整点，执行爽约扫描（`job/expire`）+ 黑名单到期自动解除（status=active 且已到期 → released）
+- `gymreserve-expire`：每 10 分钟，执行爽约扫描（`job/expire`）+ 黑名单到期自动解除（status=active 且已到期 → released）
 - `gymreserve-notify`：每 5 分钟，执行预约提醒（`job/notify`，P1）
+
+> **⚠️ 触发器只在云函数首次创建时自动生成**，后续用「上传并部署」更新代码不会同步重建触发器。部署后请到云开发控制台 → 云函数 `cloud` → 触发器，确认 `gymreserve-expire`、`gymreserve-notify` 两个触发器存在且启用；缺失就手动新建（类型=定时触发，cron 见 `config.json`）。否则爽约不会自动拉黑、黑名单到期不会自动解除。
 
 如需手动触发（云端测试），可传：
 
 ```json
-{ "route": "job/expire", "job_secret": "gymreserve-job-secret-2026" }
+{ "route": "job/expire", "job_secret": "<JOB_SECRET>" }
 ```
 
 ---
@@ -98,12 +93,13 @@ gymreserve/
 | 角色 | role 值 | 权限 |
 |---|---|---|
 | 学生 | 1 | 预约/取消/二维码/我的记录 |
-| 普通管理员 | 2 | + 扫码签到、签到记录、手动拉黑、公告管理 |
-| 超级管理员 | 3 | + 解除拉黑、场地闭馆、系统日志、配置/活动图 |
-| 人事管理员 | 4 | 兼任超管全部 + 人事管理（最高） |
+| 普通管理员 | 2 | + 扫码签到、签到记录、公告管理 |
+| 超级管理员 | 3 | + 拉黑学生、修改成员信息、解除黑名单、场地闭馆、系统日志、配置/活动图 |
+| 人事管理员 | 4 | 拥有超管全部权限，另可任命超级管理员与人事管理员（超管不可） |
 
-- 人事管理员（原「老师/主席」已合并）兼任超级管理员全部权限；人事（role≥4）仅人事管理员。
-- 首次登录自动注册为「学生」；管理员由超管/人事管理员在 users 表中配置角色，或在「人事管理」中任免。
+- 人事管理员（原「老师/主席」已合并）**拥有超级管理员全部权限**，独有权限为：任命超级管理员、任命人事管理员。
+- 拉黑学生、修改成员信息、解除黑名单：超管(3)与人事管理员(4)共有。
+- 首次登录自动注册为「学生」；管理员在「人事管理」中任免。
 
 ---
 

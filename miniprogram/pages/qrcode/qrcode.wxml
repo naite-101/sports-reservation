@@ -5,6 +5,11 @@
     </view>
     <view class="qr-stage">
       <canvas canvas-id="qrcode" style="width: {{size}}px; height: {{size}}px; margin: 0 auto;"></canvas>
+      <!-- loading 遮罩：加载/刷新中覆盖在二维码上，消除打开时空白卡顿感 -->
+      <view class="qr-loading-mask" wx:if="{{loading}}">
+        <view class="qr-loading-spinner"></view>
+        <text>加载中...</text>
+      </view>
     </view>
     <view class="qr-tip">二维码 {{countdown}} 秒后自动刷新</view>
   </view>

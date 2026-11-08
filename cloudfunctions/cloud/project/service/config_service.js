@@ -26,10 +26,17 @@ class ConfigService extends BaseService {
   /** 修改基础配置（P2，当前支持 open_time） */
   async set(operator, { key, value }) {
     if (key !== 'open_time') this.AppError('暂不支持该配置项', appCode.DATA);
-    if (!value || !(value.hour >= 0) || !(value.minute >= 0)) {
-      this.AppError('开放时间配置不合法', appCode.DATA);
+    // L-5：hour/minute 边界校验（hour ∈ [0,23]、minute ∈ [0,59]）
+    const hour = Number(value && value.hour);
+    const minute = Number(value && value.minute);
+    if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+      this.AppError('开放时间小时必须在 0~23 之间', appCode.DATA);
     }
-    await ConfigModel.insertOrUpdate(key, { key: key, value: value, update_time: timeUtil.now() });
+    if (!Number.isInteger(minute) || minute < 0 || minute > 59) {
+      this.AppError('开放时间分钟必须在 0~59 之间', appCode.DATA);
+    }
+    const newValue = { hour: hour, minute: minute };
+    await ConfigModel.insertOrUpdate(key, { key: key, value: newValue, update_time: timeUtil.now() });
     await OperationLogModel.insert({
       module: 'config',
       action: 'set_config',
@@ -37,7 +44,7 @@ class ConfigService extends BaseService {
       operator_name: operator.name || '',
       operator_role: operator.role,
       target_desc: key,
-      detail: { value: value },
+      detail: { value: newValue },
       create_time: timeUtil.now(),
     });
     return { set: true };

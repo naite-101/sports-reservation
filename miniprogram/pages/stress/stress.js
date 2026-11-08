@@ -1,6 +1,9 @@
 const request = require('../../utils/request.js');
 const util = require('../../utils/util.js');
 
+// 压测页环境开关：仅本地联调时手动改为 true，发布前必须为 false
+const IS_DEV = false;
+
 /**
  * 多微信号真人并发压测页（仅测试用）
  *
@@ -29,6 +32,11 @@ Page({
   },
 
   onLoad() {
+    // 生产门禁：仅本地联调时手动改为 true，发布前必须为 false（本页已从 app.json 移除，不随生产包分发）
+    if (!IS_DEV) {
+      wx.reLaunch({ url: '/pages/index/index' });
+      return;
+    }
     this.init();
   },
 
@@ -45,17 +53,15 @@ Page({
       });
 
       const slotData = await request.call('slot/list', {}, { silent: true });
-      const now = new Date();
-      const openMin = (slotData.open_time.hour || 0) * 60 + (slotData.open_time.minute || 0);
-      const nowMin = now.getHours() * 60 + now.getMinutes();
       const isToday = !!slotData.is_today;
 
+      // L-9：开放判定以服务端 slot/list 为准，不用本地时间
       this.setData({
         date: slotData.date,
         slots: slotData.slots,
         openTime: slotData.open_time,
         isToday: isToday,
-        openReached: isToday ? true : (nowMin >= openMin),
+        openReached: !!slotData.date,
         activeSlotKey: slotData.slots.length ? slotData.slots[0].slot_key : '',
         loading: false,
       });
@@ -106,14 +112,11 @@ Page({
     wx.showLoading({ title: '抢场地中...' });
     let ok = false, code = '', msg = '';
     try {
-      // 自动获取并答对验证码（压测页自动通过人机校验，聚焦服务端并发抢场逻辑）
-      const cap = await request.call('captcha/issue', {}, { silent: true });
+      // 防脚本已改为纯服务端窗口限流，预约无需验证码，直接提交
       const res = await request.call('reservation/create', {
         date: date,
         slot_key: activeSlotKey,
         venue_key: targetCourt,
-        captcha_token: cap.token,
-        captcha_answer: solveCaptcha(cap.question),
       }, { silent: true });
       ok = true;
       code = '200';
@@ -159,23 +162,9 @@ function codeText(code, e) {
     '4106': '场地闭馆',
     '4010': '请先完善个人信息',
     '4004': '你已被拉黑',
-    '4200': '验证码缺失',
-    '4201': '验证码失效',
-    '4202': '验证码答案错误',
     '4203': '操作过于频繁',
   };
   if (map[code]) return map[code];
   return (e && e.msg) ? e.msg : ('失败 code=' + code);
 }
 
-/** 解析验证码题目得到正确答案 */
-function solveCaptcha(q) {
-  const m = /^(\d+)\s*([+\-×])\s*(\d+)\s*=\s*\?$/.exec(String(q).trim());
-  if (!m) return '';
-  const a = Number(m[1]);
-  const b = Number(m[3]);
-  if (m[2] === '+') return String(a + b);
-  if (m[2] === '-') return String(a - b);
-  if (m[2] === '×') return String(a * b);
-  return '';
-}

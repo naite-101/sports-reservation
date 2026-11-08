@@ -25,23 +25,38 @@ Page({
   },
 
   async init() {
+    const _app = getApp();
+
+    // 【防闪现】缓存优先：有用户缓存先同步渲染，消除 role=0 时「完善信息」提示卡片的闪现
+    const cached = _app.getUserCache();
+    if (cached) {
+      this.setData({ role: Number(cached.role) || 0, blackDays: cached.black_days || 0 });
+      _app.globalData.role = Number(cached.role) || 0;
+    }
+
+    // 【后端为准】异步刷新 login（app.refreshUserInfo 带 TTL 去重，切 tab 不再重复请求）
     try {
-      const login = await request.call('passport/login', {}, { silent: true });
-      this.setData({
-        role: login.role,
-        blackDays: login.black_days || 0,
-      });
-      const app = getApp();
-      app.globalData.role = login.role;
-      app.globalData.userInfo = login;
+      const login = await _app.refreshUserInfo();
+      if (login) {
+        this.setData({ role: Number(login.role) || 0, blackDays: login.black_days || 0 });
+        _app.globalData.role = login.role;
+        _app.globalData.userInfo = login;
+      }
     } catch (e) {
       // 静默处理，页面仍可展示
     }
 
-    // 场馆（需登录，匿名用户静默跳过）
+    // 场馆（会话内 60 秒缓存，减少切 tab 重复请求；需登录，匿名用户静默跳过）
     try {
-      const venues = await request.call('venue/list', {}, { silent: true });
-      this.setData({ venues: venues || [] });
+      const vNow = Date.now();
+      if (this._venueCache && vNow - this._venueCacheAt < 60000) {
+        this.setData({ venues: this._venueCache });
+      } else {
+        const venues = await request.call('venue/list', {}, { silent: true });
+        this._venueCache = venues || [];
+        this._venueCacheAt = vNow;
+        this.setData({ venues: this._venueCache });
+      }
     } catch (e) {}
 
     // 我的预约（选离现在最近、尚未结束的一场，用于「选择场馆」标题旁的简讯）
@@ -64,13 +79,20 @@ Page({
       }
     } catch (e) {}
 
-    // 首页公告区（最近 3 条，带已读/未读与中文日期）
+    // 首页公告区（最近 3 条，带已读/未读与中文日期；会话内 60 秒缓存减少重复请求）
     try {
-      const noticeListRes = await request.call('notice/list', { page: 1, size: 3 }, { silent: true });
-      const noticeList = ((noticeListRes && noticeListRes.list) || []).map((n) =>
-        Object.assign({}, n, { dateText: util.timestamp2TimeCn(n.publish_time) })
-      );
-      this.setData({ noticeList: noticeList });
+      const nNow = Date.now();
+      if (this._noticeCache && nNow - this._noticeCacheAt < 60000) {
+        this.setData({ noticeList: this._noticeCache });
+      } else {
+        const noticeListRes = await request.call('notice/list', { page: 1, size: 3 }, { silent: true });
+        const noticeList = ((noticeListRes && noticeListRes.list) || []).map((n) =>
+          Object.assign({}, n, { dateText: util.timestamp2TimeCn(n.publish_time) })
+        );
+        this._noticeCache = noticeList;
+        this._noticeCacheAt = nNow;
+        this.setData({ noticeList: noticeList });
+      }
     } catch (e) {}
 
     // 最新公告弹窗：每次冷启动弹一次，用户点「我知道了」后本次会话不再弹（见 onCloseNotice）
@@ -142,33 +164,48 @@ Page({
     });
   },
 
-  /** 点击轮播图放大预览（优先用已缓存的临时链接，秒开；cloud:// 未就绪时现场兜底） */
+  /** 点击轮播图放大预览。
+   *  关键：wx.previewImage 不支持 cloud:// 文件 ID，必须转成 https 临时链接，否则会一直转圈卡住；
+   *  且缓存里的临时链接可能已过期，所以云端图点击时【始终用 fileID 现场重新转换】保证新鲜有效。 */
   onTapBanner(e) {
     const index = Number(e.currentTarget.dataset.index) || 0;
     const isCloud = this.data.banners && this.data.banners.length > 0;
     const list = isCloud ? this.data.banners : this.data.localBanners;
-    const urls = list.map((item) => item.url || item.fileID || item.src).filter(Boolean);
-    if (!urls.length) return;
-    const current = urls[index] || urls[0];
-    // 仍是 cloud:// 文件 ID（预取未完成/失败）时，现场转一次
-    if (current.indexOf('cloud://') === 0) {
-      wx.cloud.getTempFileURL({
-        fileList: [current],
-        success: (res) => {
-          const u = res.fileList && res.fileList[0] && res.fileList[0].tempFileURL;
-          if (u) {
-            wx.previewImage({ current: u, urls: [u] });
-          } else {
+
+    if (isCloud) {
+      const fileIds = list.map((item) => item.fileID).filter(Boolean);
+      if (fileIds.length) {
+        wx.cloud.getTempFileURL({
+          fileList: fileIds,
+          success: (res) => {
+            const map = {};
+            (res.fileList || []).forEach((f) => {
+              if (f.tempFileURL) map[f.fileID] = f.tempFileURL;
+            });
+            // 用转换结果回填；仍残留 cloud://（转换失败）的项剔除，避免预览卡住
+            const urls = list
+              .map((item) => map[item.fileID] || item.url)
+              .filter((s) => s && String(s).indexOf('cloud://') !== 0);
+            if (!urls.length) {
+              wx.showToast({ title: '图片加载失败', icon: 'none' });
+              return;
+            }
+            wx.previewImage({ current: urls[index] || urls[0], urls: urls });
+          },
+          fail: () => {
             wx.showToast({ title: '图片加载失败', icon: 'none' });
-          }
-        },
-        fail: () => {
-          wx.showToast({ title: '图片加载失败', icon: 'none' });
-        },
-      });
-      return;
+          },
+        });
+        return;
+      }
     }
-    wx.previewImage({ current: current, urls: urls });
+
+    // 本地兜底图（或云端无 fileID 的异常情况）：直接用本地路径预览
+    const urls = list
+      .map((item) => item.src || item.url)
+      .filter((s) => s && String(s).indexOf('cloud://') !== 0);
+    if (!urls.length) return;
+    wx.previewImage({ current: urls[index] || urls[0], urls: urls });
   },
 
   onTapVenue(e) {

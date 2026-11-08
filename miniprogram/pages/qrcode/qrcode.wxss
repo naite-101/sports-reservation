@@ -14,14 +14,47 @@
   margin-right: 10rpx;
 }
 
-/* 二维码展示区：白色圆角容器 */
+/* 二维码展示区：白色圆角容器（相对定位，供 loading 遮罩覆盖） */
 .qr-stage {
+  position: relative;
   background: #fff;
   border: 2rpx solid #eef0f2;
   border-radius: 24rpx;
   padding: 28rpx;
   display: inline-block;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* loading 遮罩：覆盖在 canvas 上，加载/刷新时消除空白卡顿 */
+.qr-loading-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 24rpx;
+  gap: 16rpx;
+}
+
+/* loading 旋转圈 */
+.qr-loading-spinner {
+  width: 48rpx;
+  height: 48rpx;
+  border: 4rpx solid #e3f2fc;
+  border-top-color: #3557F2;
+  border-radius: 50%;
+  animation: qr-spin 0.8s linear infinite;
+}
+
+@keyframes qr-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* 倒计时刷新标签：浅暖橙 */

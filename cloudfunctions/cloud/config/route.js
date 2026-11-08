@@ -15,9 +15,6 @@ module.exports = {
   'reservation/create': { controller: 'reservation_controller', action: 'create', role: 1 },
   'reservation/cancel': { controller: 'reservation_controller', action: 'cancel', role: 1 },
 
-  // ---------- 验证码（防脚本：预约前的人机校验） ----------
-  'captcha/issue': { controller: 'captcha_controller', action: 'issue', role: 1 },
-
   // ---------- 我的 / 记录 / 二维码 ----------
   'my/reservations': { controller: 'my_controller', action: 'reservations', role: 1 },
   'my/records': { controller: 'my_controller', action: 'records', role: 1 },
@@ -50,8 +47,9 @@ module.exports = {
   'admin/checkin_records': { controller: 'admin_controller', action: 'checkinRecords', role: 2 },
 
   // ---------- 黑名单 ----------
+  // 拉黑、解除黑名单：超管(3)与人事管理员(4)均可（人事拥有超管全部权限）；普通管理员无拉黑/解除权。
   'blacklist/list': { controller: 'blacklist_controller', action: 'list', role: 2 },
-  'blacklist/add': { controller: 'blacklist_controller', action: 'add', role: 2 },
+  'blacklist/add': { controller: 'blacklist_controller', action: 'add', role: 3 },
   'blacklist/release': { controller: 'blacklist_controller', action: 'release', role: 3 },
 
   // ---------- 场地闭馆 / 系统日志 ----------
