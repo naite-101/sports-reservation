@@ -112,6 +112,23 @@
   margin-top: 10rpx;
 }
 
+/* 闭馆场地的恢复时刻（如「至19:35恢复」），min-height 保证三种状态行高一致 */
+.court-sub {
+  min-height: 22rpx;
+  font-size: 16rpx;
+  line-height: 1.3;
+  margin-top: 4rpx;
+  opacity: 0.85;
+}
+
+/* 场地网格下方的闭馆说明 */
+.closed-hint {
+  margin-top: 16rpx;
+  font-size: 20rpx;
+  line-height: 1.5;
+  color: #9aa0a6;
+}
+
 .court-check {
   position: absolute;
   top: 8rpx;

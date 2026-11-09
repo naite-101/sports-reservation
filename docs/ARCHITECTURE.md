@@ -232,12 +232,16 @@ flowchart TB
 | `venue_type` | string | `badminton` / `pingpong` / `gym` |
 | `venue_type_name` | string | 羽毛球场/乒乓球场/健身房 |
 | `court_no` | number | 馆内编号 1~N |
-| `closed` | bool | 是否临时闭馆 |
-| `closed_until` | number | 闭馆截止时间戳(ms)，0=不限时 |
+| `closed` | bool | 是否闭馆（true=有闭馆记录，需结合 `closed_until` 判定） |
+| `closed_until` | number | 闭馆恢复时刻(ms)：`0`=永久闭馆（手动恢复）；`>now`=临时闭馆到该时刻 |
 | `update_time` | number | 更新时间(ms) |
 
 - 索引：`_id` 唯一；建议 `(venue_type, court_no)`、`(closed)`。
 - 场地唯一标识规则（已裁定）：`场馆类型 + 场地编号` 组合键。
+- 闭馆判定规则（`venue_close_util`，前后端唯一口径）：**按场次**判定，不是「当天有闭馆就锁全天」。
+  拿「场次开始时间」与「恢复时刻」比：`场次开始 ≥ closed_until` → 可预约；`场次开始 < closed_until` → 保持闭馆；
+  `closed_until` 已过（`now ≥ closed_until`）→ 记录自动失效；`closed_until=0` → 任何场次都锁定。
+  例：恢复 19:35，`18:20-19:30` 闭馆、`19:40-20:50` 可约。闭馆联动取消预约同样只取消被覆盖的场次。
 
 ### 3.3 `time_slots` 场次模板表（初始化 6 条）
 
@@ -598,7 +602,7 @@ sequenceDiagram
     C->>SV: create(openid, params)
     SV->>SV: 校验：已登录/已完善信息/未拉黑
     SV->>SV: 校验：date==明天 且 now>=昨天21:00(开放时间)
-    SV->>SV: 校验：场地未闭馆(venues.closed==false)
+    SV->>SV: 校验：场地该场次未闭馆（场次开始时间 ≥ closed_until 才放行）
     SV->>DB: runTransaction
     activate DB
     DB->>DB: add reservations(_id=date_slotKey_venueKey)
@@ -949,7 +953,7 @@ graph LR
 2. **手动拉黑**：`blacklist/add`（自定义时长，channel=manual）+ `blacklist/list`；同步 `users.black_until` + 写 operation_logs。
 3. **公告管理**：发布/修改/删除（逻辑删除）。
 4. **签到记录**：`admin/checkin_records` 当日数据按场馆/场次筛选。
-5. **超管能力**：`venue/close`（按场馆+编号设置闭馆/恢复，闭馆场地不可预约）、`blacklist/release`（解除，status=released，历史保留+日志）、`log/list`（拉黑记录+管理员操作记录）。
+5. **超管能力**：`venue/close`（按场馆+编号设置闭馆/恢复；临时闭馆按场次判定，恢复时刻之后才开始的场次仍可预约）、`blacklist/release`（解除，status=released，历史保留+日志）、`log/list`（拉黑记录+管理员操作记录）。
 6. 管理端入口：`mine` 页按角色显示"管理后台"入口；`admin` 首页按角色渲染菜单。
 
 **验收标准**：

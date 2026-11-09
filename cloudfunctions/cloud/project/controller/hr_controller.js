@@ -53,7 +53,7 @@ class HrController extends BaseController {
       name: 'must|string|min:1|max:20|name=姓名',
       student_no: 'must|string|min:1|max:30|name=学号',
       phone: 'must|mobile|name=手机号',
-      college: 'must|string|min:1|max:50|name=学院',
+      college: 'must|string|min:1|max:50|name=年级班级',
     });
     return await new HrService().studentEdit(this._user, input);
   }

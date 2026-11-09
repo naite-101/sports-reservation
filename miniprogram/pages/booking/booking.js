@@ -19,6 +19,7 @@ Page({
     openReached: false,
     courts: [],
     selectedCourt: '',
+    closedHint: '',
     blackDays: 0,
     loading: true,
   },
@@ -62,15 +63,41 @@ Page({
     const { date, activeSlotKey, activeType } = this.data;
     if (!date || !activeSlotKey) return;
     try {
-      const courts = await request.call('reservation/status', {
+      const courts = ((await request.call('reservation/status', {
         date: date,
         slot_key: activeSlotKey,
         venue_type: activeType,
+      })) || []).map((c) => Object.assign({}, c, {
+        // 闭馆场地的副标题（如「至19:35恢复」），可预约/已约满保持空串占位对齐
+        closed_label: c.status === 'closed' && c.closed_until_text ? '至' + c.closed_until_text + '恢复' : '',
+      }));
+      this.setData({
+        courts: courts,
+        selectedCourt: '',
+        closedHint: this.buildClosedHint(courts),
       });
-      this.setData({ courts: courts, selectedCourt: '' });
     } catch (e) {
-      this.setData({ courts: [] });
+      this.setData({ courts: [], closedHint: '' });
     }
+  },
+
+  /**
+   * 闭馆提示：服务端已按「场次开始时间 vs 恢复时刻」判定，
+   * 这里只负责把「恢复之后开始的场次可约」讲清楚，避免学生误以为当天全锁。
+   */
+  buildClosedHint(courts) {
+    const closed = (courts || []).filter((c) => c.status === 'closed');
+    if (!closed.length) return '';
+    // 恢复时刻可能因场地不同而不同，只有全部一致时才合并成一句
+    const untils = closed.map((c) => c.closed_until_text).filter(Boolean);
+    const unique = untils.filter((v, i) => untils.indexOf(v) === i);
+    if (!unique.length) return closed.length + ' 块场地闭馆中，暂不可预约';
+    if (unique.length > 1) return '部分场地闭馆中，恢复时刻之后开始的场次可正常预约';
+    const until = unique[0];
+    const prefix = closed.length === 1
+      ? closed[0].court_no + ' 号场地闭馆至 ' + until
+      : closed.length + ' 块场地闭馆至 ' + until;
+    return prefix + '，' + until + ' 之后开始的场次可正常预约';
   },
 
   onTapType(e) {
@@ -84,10 +111,22 @@ Page({
   },
 
   onTapCourt(e) {
-    const status = e.currentTarget.dataset.status;
-    const key = e.currentTarget.dataset.key;
-    if (status !== 'available') return;
-    this.setData({ selectedCourt: key });
+    const dataset = e.currentTarget.dataset;
+    const status = dataset.status;
+    if (status === 'closed') {
+      const until = dataset.until;
+      wx.showToast({
+        title: until ? until + ' 之后开始的场次可预约' : '该场地闭馆中，暂不可预约',
+        icon: 'none',
+        duration: 2500,
+      });
+      return;
+    }
+    if (status === 'booked') {
+      wx.showToast({ title: '该场地本场次已被预约', icon: 'none' });
+      return;
+    }
+    this.setData({ selectedCourt: dataset.key });
   },
 
   async confirmBooking() {
@@ -140,7 +179,10 @@ Page({
       4004: '您已被限制预约',
       4203: '操作过于频繁，请稍后再试',
     };
-    const title = titleMap[code] || (e && e.msg) || '预约失败，请重试';
+    // 闭馆类错误用服务端文案（会带上「闭馆至 19:35」这类恢复时刻），其余用固定文案兜底
+    let title = titleMap[code];
+    if (code === 4106 && e && e.msg) title = e.msg;
+    if (!title) title = (e && e.msg) || '预约失败，请重试';
     wx.showToast({ title: title, icon: 'none', duration: 2500 });
   },
 });

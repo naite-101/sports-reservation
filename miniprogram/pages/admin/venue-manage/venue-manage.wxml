@@ -1,0 +1,230 @@
+<view class="page-loading" wx:if="{{!ready}}">正在校验管理员权限...</view>
+
+<view class="container" wx:if="{{role >= 2}}">
+  <!-- 顶部概览：日期 + 今日人次 -->
+  <view class="hero">
+    <view class="hero-top">
+      <view class="hero-left">
+        <view class="hero-title">场地签到管理</view>
+        <view class="hero-sub">{{activeTypeName}} · 签到人员与附属人员统一查看</view>
+      </view>
+      <picker mode="date" value="{{date}}" end="{{maxDate}}" bindchange="onDateChange">
+        <view class="date-chip">{{date}} ▾</view>
+      </picker>
+    </view>
+
+    <view class="stat-row">
+      <view class="stat">
+        <view class="stat-num">{{stats.main}}</view>
+        <view class="stat-label">主签到</view>
+      </view>
+      <view class="stat">
+        <view class="stat-num">{{stats.onsite}}</view>
+        <view class="stat-label">随行人员</view>
+      </view>
+      <view class="stat">
+        <view class="stat-num">{{stats.admin}}</view>
+        <view class="stat-label">后台补录</view>
+      </view>
+      <view class="stat">
+        <view class="stat-num">{{stats.total}}</view>
+        <view class="stat-label">合计人次</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作区 -->
+  <view class="action-row">
+    <view class="action-main">
+      <t-button theme="primary" block="{{true}}" bind:tap="openCheckin">后台签到</t-button>
+    </view>
+    <view class="action-refresh">
+      <t-button theme="default" variant="outline" loading="{{loading}}" bind:tap="load">刷新</t-button>
+    </view>
+  </view>
+
+  <!-- 场馆筛选 -->
+  <scroll-view class="type-scroll" scroll-x="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}">
+    <view class="type-tabs-inline">
+      <view
+        class="type-chip {{activeType === item.key ? 'type-chip--active' : ''}}"
+        wx:for="{{types}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bind:tap="onTypeTap"
+      >{{item.name}}</view>
+    </view>
+  </scroll-view>
+
+  <!-- 图例：区分主签到 / 随行 / 后台补录 -->
+  <view class="section-head">
+    <view class="section-head-title">签到人员</view>
+    <view class="legend">
+      <text class="legend-dot legend-dot--main"></text>
+      <text class="legend-text">主签到</text>
+      <text class="legend-dot legend-dot--onsite"></text>
+      <text class="legend-text">随行</text>
+      <text class="legend-dot legend-dot--admin"></text>
+      <text class="legend-text">后台补录</text>
+    </view>
+  </view>
+
+  <!-- 签到人员列表：按主签到人分组 -->
+  <view class="record-card" wx:for="{{list}}" wx:key="checkin_id">
+    <view class="record-head">
+      <view class="main-badge">主</view>
+      <view class="main-info">
+        <view class="main-name-row">
+          <text class="main-name">{{item.main.name || '未填写姓名'}}</text>
+          <text class="pill pill--main">主签到</text>
+          <text class="pill pill--danger" wx:if="{{item.main.is_blacklisted}}">已拉黑</text>
+        </view>
+        <view class="main-sub">
+          学号 {{item.main.student_no || '—'}}<text wx:if="{{item.main.phone}}"> · {{item.main.phone}}</text>
+        </view>
+      </view>
+      <view class="record-time">{{item.checkin_time_text}}</view>
+    </view>
+
+    <view class="record-meta">
+      <text class="meta-item">{{item.venue_text}}</text>
+      <text class="meta-sep">·</text>
+      <text class="meta-item">{{item.slot_text}}</text>
+      <text class="meta-sep">·</text>
+      <text class="meta-item">共 {{item.people_count}} 人</text>
+    </view>
+
+    <view class="people">
+      <view class="person-row" wx:for="{{item.companions}}" wx:for-item="c" wx:key="id">
+        <text class="pill {{c.source === 'admin' ? 'pill--admin' : 'pill--onsite'}}">{{c.source_text}}</text>
+        <view class="person-main">
+          <view class="person-line">
+            <text class="person-name">{{c.name}}</text>
+            <text class="person-time" wx:if="{{c.add_time_text}}">{{c.add_time_text}}</text>
+          </view>
+          <view class="person-line person-line--sub" wx:if="{{c.student_no || c.phone}}">
+            <text class="person-sub" wx:if="{{c.student_no}}">{{c.student_no}}</text>
+            <text class="person-dot" wx:if="{{c.student_no && c.phone}}">·</text>
+            <text class="person-sub" wx:if="{{c.phone}}">{{c.phone}}</text>
+          </view>
+        </view>
+        <text class="person-del" wx:if="{{c.removable}}" data-id="{{c.id}}" data-name="{{c.name}}" catchtap="removeCompanion">删除</text>
+      </view>
+      <view class="people-empty" wx:if="{{!item.companions.length}}">暂无附属人员，可扫对方个人二维码补录</view>
+    </view>
+
+    <view class="record-actions">
+      <view class="link-btn link-btn--scan" data-id="{{item.checkin_id}}" data-name="{{item.main.name}}" bind:tap="scanCompanion">
+        <line-icon name="scan" size="26rpx" />
+        <text>扫码补录附属人员</text>
+      </view>
+      <view
+        class="link-btn link-btn--danger"
+        wx:if="{{!item.main.is_blacklisted}}"
+        data-id="{{item.checkin_id}}"
+        data-name="{{item.main.name}}"
+        bind:tap="openBlock"
+      >拉黑该用户</view>
+      <view class="link-btn link-btn--muted" wx:else>已拉黑至 {{item.main.black_until_text}}</view>
+    </view>
+  </view>
+
+  <t-empty wx:if="{{loaded && !loading && !list.length}}" description="当日暂无签到记录" />
+
+  <view class="bottom-tip">签到窗口与扫码签到一致：场次开始前 15 分钟至场次结束</view>
+</view>
+
+<!-- 后台签到抽屉 -->
+<view class="sheet-mask" wx:if="{{showCheckin}}" bindtap="closeCheckin"></view>
+<view class="sheet" wx:if="{{showCheckin}}" catchtap="noop">
+  <view class="sheet-bar"></view>
+  <view class="sheet-head">
+    <view class="sheet-head-left">
+      <view class="sheet-title">后台签到</view>
+      <view class="sheet-sub">无需扫码，直接为当日预约用户发起签到</view>
+    </view>
+    <view class="sheet-close" bindtap="closeCheckin">关闭</view>
+  </view>
+
+  <view class="search-row">
+    <input
+      class="search-input"
+      value="{{pendingKeyword}}"
+      placeholder="搜索姓名 / 学号 / 手机号"
+      confirm-type="search"
+      bindinput="onPendingKeyword"
+      bindconfirm="searchPending"
+    />
+    <view class="search-btn" bindtap="searchPending">搜索</view>
+  </view>
+
+  <scroll-view scroll-y="{{true}}" class="sheet-body">
+    <view class="pending-tip" wx:if="{{pendingList.length}}">
+      可签到 {{pendingCount}} 人 · 共 {{pendingList.length}} 条待签到预约
+    </view>
+
+    <view class="pending-item" wx:for="{{pendingList}}" wx:key="res_id">
+      <view class="pending-main">
+        <view class="pending-name">
+          {{item.student_name || '未填写姓名'}}
+          <text class="pending-no">{{item.student_no}}</text>
+        </view>
+        <view class="pending-meta">{{item.venue_text}} · {{item.slot_text}}</view>
+      </view>
+      <view class="pending-right">
+        <text class="pill {{item.can_checkin ? 'pill--ok' : (item.is_blacklisted ? 'pill--danger' : 'pill--muted')}}">{{item.state_text}}</text>
+        <t-button size="small" theme="primary" disabled="{{!item.can_checkin}}" data-id="{{item.res_id}}" bind:tap="doCheckin">签到</t-button>
+      </view>
+    </view>
+
+    <view class="sheet-status" wx:if="{{pendingLoading}}">加载中...</view>
+    <t-empty wx:if="{{!pendingLoading && !pendingList.length}}" description="当日暂无可签到的预约" />
+    <view class="sheet-spacer"></view>
+  </scroll-view>
+</view>
+
+<!-- 拉黑弹窗 -->
+<view class="modal-mask" wx:if="{{showBlock}}" bindtap="closeBlock">
+  <view class="modal" catchtap="noop">
+    <view class="modal-title">拉黑用户</view>
+    <view class="modal-sub">{{blockTarget.main_name || '—'}} · 拉黑后无法签到与预约</view>
+
+    <view class="form-item">
+      <view class="form-label">拉黑天数</view>
+      <input
+        class="form-input"
+        type="number"
+        value="{{blockForm.duration_days}}"
+        data-field="duration_days"
+        bindinput="onBlockInput"
+        placeholder="默认 7 天"
+      />
+      <view class="quick-days">
+        <view class="quick-day {{blockForm.duration_days == 3 ? 'quick-day--active' : ''}}" data-days="3" bind:tap="pickDays">3 天</view>
+        <view class="quick-day {{blockForm.duration_days == 7 ? 'quick-day--active' : ''}}" data-days="7" bind:tap="pickDays">7 天</view>
+        <view class="quick-day {{blockForm.duration_days == 10 ? 'quick-day--active' : ''}}" data-days="10" bind:tap="pickDays">10 天</view>
+        <view class="quick-day {{blockForm.duration_days == 30 ? 'quick-day--active' : ''}}" data-days="30" bind:tap="pickDays">30 天</view>
+      </view>
+    </view>
+    <view class="form-item">
+      <view class="form-label">拉黑原因</view>
+      <input
+        class="form-input"
+        value="{{blockForm.reason}}"
+        data-field="reason"
+        bindinput="onBlockInput"
+        maxlength="100"
+        placeholder="如：冒名签到 / 现场冲突"
+      />
+    </view>
+
+    <view class="modal-actions">
+      <view class="modal-btn-wrap">
+        <t-button theme="default" variant="outline" block="{{true}}" bind:tap="closeBlock">取消</t-button>
+      </view>
+      <view class="modal-btn-wrap">
+        <t-button theme="danger" block="{{true}}" loading="{{blocking}}" bind:tap="submitBlock">确认拉黑</t-button>
+      </view>
+    </view>
+  </view>
+</view>

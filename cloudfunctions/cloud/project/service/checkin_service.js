@@ -9,6 +9,7 @@ const VenueModel = require('../model/venue_model.js');
 const CheckinRecordModel = require('../model/checkin_record_model.js');
 const UserModel = require('../model/user_model.js');
 const OperationLogModel = require('../model/operation_log_model.js');
+const closeUtil = require('./venue_close_util.js');
 const dbUtil = require('../../framework/database/db_util.js');
 const config = require('../../config/config.js');
 const timeUtil = require('../../framework/utils/time_util.js');
@@ -48,10 +49,15 @@ class CheckinService extends BaseService {
       this.AppError('预约场次不匹配', appCode.SLOT_MISMATCH);
     }
 
-    // 闭馆场地不可签到（维修闭馆后即使历史预约存在也不允许进入）
+    // 闭馆场地不可签到：按「本次预约的场次开始时间 vs 恢复时刻」判定，
+    // 恢复之后才开始的场次可正常签到（避免临时闭馆误伤后续场次的学生）
+    const si = timeUtil.parseSlotKey(res.slot_key);
     const venue = await VenueModel.getOne(res.venue_key);
-    if (venue && venue.closed && (!venue.closed_until || venue.closed_until > now)) {
-      this.AppError('该场地已闭馆，无法签到', appCode.VENUE_CLOSED);
+    if (venue && si) {
+      const verdict = closeUtil.evaluateSlot(venue, res.date, si, now);
+      if (verdict.blocked) {
+        this.AppError('该场地已闭馆，无法签到', appCode.VENUE_CLOSED);
+      }
     }
 
     // 幂等：已签到直接返回
@@ -60,7 +66,14 @@ class CheckinService extends BaseService {
       return { checkin_time: rec ? rec.checkin_time : res.checkin_time, already: true };
     }
 
-    const si = timeUtil.parseSlotKey(res.slot_key);
+    // 黑名单拦截：被拉黑的学生不可再签到（幂等分支之后判断，避免重复调用报错）
+    const studentUser = await UserModel.getOne(res.student_openid);
+    const studentBlackUntil = studentUser && studentUser.black_until ? studentUser.black_until : 0;
+    if (studentBlackUntil > now) {
+      const blackDays = Math.ceil((studentBlackUntil - now) / config.DAY_MS);
+      this.AppError('该用户已被拉黑（剩余 ' + blackDays + ' 天），无法签到', appCode.BLACKLIST, { black_days: blackDays });
+    }
+
     const winStart = timeUtil.dateMinuteToTimestamp(res.date, si.start_min) - config.CHECKIN_BEFORE_MIN * 60 * 1000;
     const endTs = timeUtil.dateMinuteToTimestamp(res.date, si.end_min);
     if (now < winStart || now > endTs) {

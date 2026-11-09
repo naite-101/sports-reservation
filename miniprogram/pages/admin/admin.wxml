@@ -5,6 +5,9 @@
   </view>
 
   <t-cell-group theme="card" title="签到运营管理" t-class-title="admin-group-title" wx:if="{{role >= 2}}">
+    <t-cell title="场地管理" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/venue-manage/venue-manage" bind:click="nav">
+      <line-icon name="venue" size="40rpx" slot="left-icon" />
+    </t-cell>
     <t-cell title="扫码签到" arrow="{{true}}" hover="{{true}}" data-url="/pages/admin/checkin/checkin" bind:click="nav">
       <line-icon name="scan" size="40rpx" slot="left-icon" />
     </t-cell>

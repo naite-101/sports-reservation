@@ -67,15 +67,18 @@
         wx:key="venue_key"
         data-key="{{item.venue_key}}"
         data-status="{{item.status}}"
+        data-until="{{item.closed_until_text}}"
         bind:tap="onTapCourt"
       >
         <view class="court-no">{{item.court_no}}号</view>
         <view class="court-status">{{item.status === 'available' ? '可预约' : (item.status === 'booked' ? '已约满' : '闭馆')}}</view>
+        <view class="court-sub">{{item.closed_label}}</view>
         <view class="court-check" wx:if="{{selectedCourt === item.venue_key}}">
           <line-icon name="check" size="28rpx" />
         </view>
       </view>
     </view>
+    <view class="closed-hint" wx:if="{{closedHint}}">{{closedHint}}</view>
     <t-empty wx:if="{{!courts.length}}" description="暂无场地数据" />
   </view>
 

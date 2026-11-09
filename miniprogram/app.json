@@ -12,6 +12,7 @@
     "pages/admin/admin",
     "pages/admin/checkin/checkin",
     "pages/admin/blacklist/blacklist",
+    "pages/admin/venue-manage/venue-manage",
     "pages/admin/notice-mgr/notice-mgr",
     "pages/admin/checkin-records/checkin-records",
     "pages/admin/venue-close/venue-close",

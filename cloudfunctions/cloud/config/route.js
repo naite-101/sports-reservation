@@ -46,6 +46,15 @@ module.exports = {
   'admin/checkin': { controller: 'admin_controller', action: 'checkin', role: 2 },
   'admin/checkin_records': { controller: 'admin_controller', action: 'checkinRecords', role: 2 },
 
+  // ---------- 场地管理（我的 → 管理后台 → 场地管理；所有管理员 role>=2 默认可用） ----------
+  // 后台签到 / 签到人员信息 / 附属人员补录 / 签到现场拉黑，均为新增路由，原有 admin/* 与 blacklist/* 不变。
+  'venue_manage/checkin_list': { controller: 'venue_manage_controller', action: 'checkinList', role: 2 },
+  'venue_manage/pending_list': { controller: 'venue_manage_controller', action: 'pendingList', role: 2 },
+  'venue_manage/checkin': { controller: 'venue_manage_controller', action: 'checkin', role: 2 },
+  'venue_manage/companion_scan': { controller: 'venue_manage_controller', action: 'companionScan', role: 2 },
+  'venue_manage/companion_remove': { controller: 'venue_manage_controller', action: 'companionRemove', role: 2 },
+  'venue_manage/block_user': { controller: 'venue_manage_controller', action: 'blockUser', role: 2 },
+
   // ---------- 黑名单 ----------
   // 拉黑、解除黑名单：超管(3)与人事管理员(4)均可（人事拥有超管全部权限）；普通管理员无拉黑/解除权。
   'blacklist/list': { controller: 'blacklist_controller', action: 'list', role: 2 },

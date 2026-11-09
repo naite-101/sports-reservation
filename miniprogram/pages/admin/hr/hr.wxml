@@ -83,7 +83,7 @@
       <input class="form-input" type="number" value="{{studentForm.phone}}" data-field="phone" bindinput="onStudentInput" />
     </view>
     <view class="form-item">
-      <view class="form-label">学院</view>
+      <view class="form-label">年级班级</view>
       <input class="form-input" value="{{studentForm.college}}" data-field="college" bindinput="onStudentInput" />
     </view>
     <view class="row" style="gap: 16rpx;">

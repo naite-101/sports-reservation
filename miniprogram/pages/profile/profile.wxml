@@ -33,9 +33,9 @@
         <view class="form-tip">请输入 11 位手机号，用于接收预约提醒</view>
       </view>
       <view class="form-item">
-        <view class="form-label">学院/单位</view>
-        <input class="form-input" value="{{college}}" data-field="college" bindinput="onInput" placeholder="请输入学院/单位" disabled="{{locked}}" />
-        <view class="form-tip">请填写所在学院或单位，访客可填"访客"</view>
+        <view class="form-label">年级班级</view>
+        <input class="form-input" value="{{college}}" data-field="college" bindinput="onInput" placeholder="请输入年级班级" disabled="{{locked}}" />
+        <view class="form-tip">请填写所在年级班级（如：2024级软件工程3班），访客可填"访客"</view>
       </view>
       <t-button wx:if="{{!locked}}" theme="primary" block="{{true}}" bind:tap="save">保存</t-button>
     </view>

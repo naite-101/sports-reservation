@@ -8,6 +8,7 @@ const StudentSlotLockModel = require('../model/student_slot_lock_model.js');
 const VenueModel = require('../model/venue_model.js');
 const TimeSlotModel = require('../model/time_slot_model.js');
 const ConfigModel = require('../model/config_model.js');
+const closeUtil = require('./venue_close_util.js');
 const dbUtil = require('../../framework/database/db_util.js');
 const config = require('../../config/config.js');
 const timeUtil = require('../../framework/utils/time_util.js');
@@ -32,16 +33,21 @@ class ReservationService extends BaseService {
 
     const now = timeUtil.now();
     return venues.map((v) => {
-      const closed = !!(v.closed && (!v.closed_until || v.closed_until > now));
+      // 闭馆按「场次开始时间 vs 恢复时刻」逐场次判定，不再「当天有闭馆就锁全天」
+      const verdict = closeUtil.evaluateSlot(v, date, slot, now);
       let status = 'available';
-      if (closed) status = 'closed';
+      if (verdict.blocked) status = 'closed';
       else if (bookedSet[v.venue_key]) status = 'booked';
+
       return {
         venue_key: v.venue_key,
         court_no: v.court_no,
         venue_type: v.venue_type,
         venue_type_name: v.venue_type_name,
         status: status,
+        // 仅闭馆时返回恢复信息，前端据此显示「至 19:35 恢复」并提示可选场次
+        closed_until: verdict.blocked ? verdict.until : 0,
+        closed_until_text: verdict.blocked ? closeUtil.untilText(verdict.until, date) : '',
       };
     });
   }
@@ -79,15 +85,21 @@ class ReservationService extends BaseService {
       this.AppError('该场次当日不开放', appCode.LOGIC);
     }
     // 场次已开始/已结束不可约：前端的时间判断不可信，以服务端时间兜底
-    if (timeUtil.dateMinuteToTimestamp(date, slot.start_min) <= now) {
+    const slotStartTs = timeUtil.dateMinuteToTimestamp(date, slot.start_min);
+    if (slotStartTs <= now) {
       this.AppError('该场次已开始或已结束，不可预约', appCode.NOT_OPEN_TIME);
     }
 
-    // 场地校验（闭馆不可约）
+    // 场地校验（闭馆不可约）：按本场次开始时间与闭馆恢复时刻比对，
+    // 恢复之后才开始的场次可正常预约（旧逻辑只看「现在是否闭馆」，会误锁全天）
     const venue = await VenueModel.getOne(venue_key);
     if (!venue) this.AppError('场地不存在', appCode.LOGIC);
-    if (venue.closed && (!venue.closed_until || venue.closed_until > now)) {
-      this.AppError('该场地临时闭馆，不可预约', appCode.VENUE_CLOSED);
+    const verdict = closeUtil.evaluateSlot(venue, date, slot, now);
+    if (verdict.blocked) {
+      const tip = verdict.permanent
+        ? '该场地已闭馆，暂不可预约'
+        : '该场地闭馆至 ' + closeUtil.untilText(verdict.until, date) + '，本场次不可预约';
+      this.AppError(tip, appCode.VENUE_CLOSED, { closed_until: verdict.until });
     }
 
     // 应用层快速查重（事务外先拦一次，减少事务开销）；并发兜底由下方事务内 student_slot_locks._id 主键保证。

@@ -39,6 +39,8 @@ module.exports = {
     notices: 'notices',
     notice_read: 'notice_read',
     checkin_records: 'checkin_records',
+    // 场地管理：管理员后台补录的附属人员（与 checkin_records 1:N，不改变原签到记录结构）
+    checkin_companions: 'checkin_companions',
     operation_logs: 'operation_logs',
     configs: 'configs',
     qrcode_tokens: 'qrcode_tokens',

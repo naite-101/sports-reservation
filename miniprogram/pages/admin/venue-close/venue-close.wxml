@@ -42,6 +42,7 @@
         <view class="form-input">{{closeTime}}</view>
       </picker>
     </view>
+    <view class="close-tip">恢复时间之后才开始的场次会自动开放预约，恢复时间之前开始的场次保持闭馆。</view>
     <view class="row" style="gap: 16rpx;">
       <t-button theme="primary" variant="outline" style="flex:1;" bind:tap="cancelClose">取消</t-button>
       <t-button theme="primary" style="flex:1;" bind:tap="confirmClose">确认闭馆</t-button>

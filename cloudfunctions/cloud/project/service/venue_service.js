@@ -9,6 +9,7 @@ const StudentSlotLockModel = require('../model/student_slot_lock_model.js');
 const TimeSlotModel = require('../model/time_slot_model.js');
 const ConfigModel = require('../model/config_model.js');
 const OperationLogModel = require('../model/operation_log_model.js');
+const closeUtil = require('./venue_close_util.js');
 const dbUtil = require('../../framework/database/db_util.js');
 const config = require('../../config/config.js');
 const timeUtil = require('../../framework/utils/time_util.js');
@@ -29,7 +30,7 @@ class VenueService extends BaseService {
           venue_type: v.venue_type,
           venue_type_name: v.venue_type_name,
           court_no: v.court_no,
-          closed: !!(v.closed && (!v.closed_until || v.closed_until > now)),
+          closed: closeUtil.isClosedNow(v, now),
           closed_until: v.closed_until || 0,
         }));
       result.push({ venue_type: type, venue_type_name: info.name, icon: info.icon, count: courts.length, courts: courts });
@@ -93,9 +94,10 @@ class VenueService extends BaseService {
     await VenueModel.edit(venue_key, data);
 
     let cancelled = 0;
-    // 闭馆时联动取消该场地已有的 pending 预约并立即释放占用，避免学生仍可按闭馆场地签到
+    // 闭馆时联动取消该场地已有的 pending 预约并立即释放占用，避免学生仍可按闭馆场地签到。
+    // 注意：临时闭馆只取消「开始时间早于恢复时刻」的场次，恢复之后开始的预约保留。
     if (closed) {
-      cancelled = await this.cancelVenueBookings(venue_key, now);
+      cancelled = await this.cancelVenueBookings(venue_key, data, now);
     }
 
     await OperationLogModel.insert({
@@ -111,15 +113,32 @@ class VenueService extends BaseService {
     return { venue_key: venue_key, closed: !!closed, cancelled_bookings: cancelled };
   }
 
-  /** 闭馆联动：取消某场地所有 pending 预约，释放实时占用表（M-9：删占用+删锁逐条事务化，防锁残留） */
-  async cancelVenueBookings(venue_key, now) {
+  /**
+   * 闭馆联动：只取消「被闭馆时段覆盖」的 pending 预约，释放实时占用表
+   * （M-9：删占用+删锁逐条事务化，防锁残留）
+   *
+   * 判定与预约状态同源（venue_close_util）：
+   *   永久闭馆（closed_until=0）→ 该场地全部 pending 取消；
+   *   临时闭馆（closed_until=恢复时刻）→ 只取消开始时间早于恢复时刻的场次，
+   *   恢复之后才开始的预约保留，不能被「一刀切」误删。
+   */
+  async cancelVenueBookings(venue_key, closure, now) {
     const pendings = await ReservationModel.getAll(
       { venue_key: venue_key, status: 'pending' },
       '_id,student_openid,date,slot_key',
       { create_time: 'asc' }
     );
     let cancelled = 0;
+    let kept = 0;
     for (const b of pendings) {
+      const si = timeUtil.parseSlotKey(b.slot_key);
+      if (si) {
+        const verdict = closeUtil.evaluateSlot(closure, b.date, si, now);
+        if (!verdict.blocked) {
+          kept++;
+          continue;
+        }
+      }
       try {
         // 事务内同时删占用 + 删学生时段锁：要么都删要么都不删，杜绝「占用没了锁还在」
         await dbUtil.runTransaction(async (t) => {
@@ -137,6 +156,9 @@ class VenueService extends BaseService {
         console.error('[venue_close] 释放失败 res_id=' + b._id, e);
       }
     }
+    if (kept) {
+      console.log('[venue_close] ' + venue_key + ' 保留 ' + kept + ' 条恢复时刻之后的预约');
+    }
     return cancelled;
   }
 
@@ -144,7 +166,7 @@ class VenueService extends BaseService {
   async closeList() {
     const list = await VenueModel.getAll({ closed: true }, '*', { venue_type: 'asc', court_no: 'asc' });
     const now = timeUtil.now();
-    return list.filter((v) => !v.closed_until || v.closed_until > now);
+    return list.filter((v) => closeUtil.isClosedNow(v, now));
   }
 }
 

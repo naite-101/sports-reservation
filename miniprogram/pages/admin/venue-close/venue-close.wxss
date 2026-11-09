@@ -30,6 +30,14 @@
   margin-top: 2rpx;
 }
 
+/* 临时闭馆规则说明：恢复后开始的场次自动开放 */
+.close-tip {
+  font-size: 20rpx;
+  line-height: 1.5;
+  color: #9aa0a6;
+  margin: 4rpx 0 16rpx;
+}
+
 .op-btn {
   margin-top: 12rpx;
   font-size: 22rpx;
